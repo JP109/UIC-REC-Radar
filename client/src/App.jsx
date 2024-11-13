@@ -4,7 +4,7 @@ import MainPage from "./pages/MainPage";
 import ChallengePage from "./pages/ChallengePage";
 import OccupancyPage from "./pages/OccupancyPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
-// import ProfilePage from "./pages/ProfilePage";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -17,7 +17,7 @@ function App() {
             <Route path="/challenge" element={<ChallengePage />} />
             <Route path="/occupancy" element={<OccupancyPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
-            {/* <Route path="/profile" element={<ProfilePage />} /> */}
+            <Route path="/profile" element={<ProfilePage />} />
           </Routes>
         </div>
       </div>
