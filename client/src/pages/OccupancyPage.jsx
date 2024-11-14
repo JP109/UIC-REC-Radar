@@ -18,13 +18,20 @@ const OccupancyPage = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Live Occupancy</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        Live Occupancy
+      </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {courts.map((court) => (
-          <div key={court.id} className="bg-white rounded-lg shadow-md p-6">
+          <div
+            key={court.id}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+          >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">{court.name}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {court.name}
+              </h2>
               <div
                 className={`px-3 py-1 rounded-full text-white ${getOccupancyColor(
                   court.occupancy,
@@ -40,7 +47,7 @@ const OccupancyPage = () => {
               </div>
             </div>
 
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
                 className={`h-2 rounded-full ${getOccupancyColor(
                   court.occupancy,
