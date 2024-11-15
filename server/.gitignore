@@ -1,0 +1,7 @@
+# Node modules
+node_modules
+
+# Environment variables file
+.env
+
+.UIC_REC_RADAR.postman_collection.json

@@ -9,7 +9,7 @@ router.get("/", async (req, res) => {
     console.log("Connecting to Supabase...");
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, points") // Select relevant columns, including points
+      .select("id, name, email, points, tier") // Select relevant columns, including points
       .order("points", { ascending: false }); // Sort by points for leaderboard
     console.log("Supabase response:", data, error);
     if (error) throw error;

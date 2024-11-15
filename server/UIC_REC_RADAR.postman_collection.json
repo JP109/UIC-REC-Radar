@@ -113,6 +113,35 @@
           }
         }
       ]
+    },
+    {
+      "name": "Complete Challenge",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"winnerId\": \"1\"}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/challenges/complete/:id",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["challenges", "complete", ":id"],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1"
+            }
+          ]
+        }
+      }
     }
   ]
 }

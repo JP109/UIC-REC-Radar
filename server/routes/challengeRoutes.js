@@ -5,11 +5,12 @@ const supabase = require("../config/supabaseClient");
 
 // Send a challenge
 router.post("/", async (req, res) => {
-  const { challengerId, challengedId, date, time } = req.body;
+  const { challengerId, challengerName, challengedId, date, time } = req.body;
   try {
     const { data, error } = await supabase.from("challenges").insert([
       {
         challenger_id: challengerId,
+        challenger_name: challengerName,
         challenged_id: challengedId,
         challenge_date: date,
         challenge_time: time,
@@ -31,8 +32,7 @@ router.get("/:id", async (req, res) => {
     const { data, error } = await supabase
       .from("challenges")
       .select("*")
-      .eq("id", id)
-      .single();
+      .eq("challenged_id", Number(id));
     if (error) throw error;
     res.json(data);
   } catch (err) {
@@ -43,7 +43,7 @@ router.get("/:id", async (req, res) => {
 // Update challenge status to "completed" and update points (example of resolving a challenge)
 router.put("/complete/:id", async (req, res) => {
   const { id } = req.params;
-  const { winnerId } = req.body; // Pass the winner's ID to update points
+  const { winnerId } = req.body;
 
   try {
     // Get challenge data
@@ -57,39 +57,54 @@ router.put("/complete/:id", async (req, res) => {
     if (!challenge)
       return res.status(404).json({ error: "Challenge not found" });
 
-    // Update the challenge status to completed
-    const { data: updatedChallenge, error: updateChallengeError } =
-      await supabase
-        .from("challenges")
-        .update({ status: "completed" })
-        .eq("id", id);
+    // Update challenge status to "completed"
+    const { error: updateChallengeError } = await supabase
+      .from("challenges")
+      .update({ status: "completed" })
+      .eq("id", id);
 
     if (updateChallengeError) throw updateChallengeError;
 
-    // Update points for winner and loser
+    // Identify the loser
     const loserId =
       winnerId === challenge.challenger_id
         ? challenge.challenged_id
         : challenge.challenger_id;
 
-    // Update winner's points
-    const { data: winnerData, error: winnerError } = await supabase
+    // Fetch winner's and loser's current points
+    const { data: users, error: usersError } = await supabase
       .from("users")
-      .update({ points: supabase.raw("points + 5") })
+      .select("id, points")
+      .in("id", [winnerId, loserId]);
+
+    if (usersError) throw usersError;
+
+    // Map points to respective users
+    const winner = users.find((user) => user.id === winnerId);
+    const loser = users.find((user) => user.id === loserId);
+
+    const winnerPoints = (winner?.points || 0) + 5;
+    const loserPoints = (loser?.points || 0) - 5;
+
+    // Update winner's points
+    const { error: winnerUpdateError } = await supabase
+      .from("users")
+      .update({ points: winnerPoints })
       .eq("id", winnerId);
 
-    if (winnerError) throw winnerError;
+    if (winnerUpdateError) throw winnerUpdateError;
 
-    // Update loser's points (reduce points)
-    const { data: loserData, error: loserError } = await supabase
+    // Update loser's points
+    const { error: loserUpdateError } = await supabase
       .from("users")
-      .update({ points: supabase.raw("points - 5") })
+      .update({ points: loserPoints })
       .eq("id", loserId);
 
-    if (loserError) throw loserError;
+    if (loserUpdateError) throw loserUpdateError;
 
-    res.json({ message: "Challenge completed", updatedChallenge });
+    res.json({ message: "Challenge completed" });
   } catch (err) {
+    console.error("Error completing challenge:", err);
     res.status(500).json({ error: "Error completing challenge" });
   }
 });

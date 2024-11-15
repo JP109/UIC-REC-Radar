@@ -11,15 +11,31 @@ const ChallengePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [userDataLoading, setUSerDataLoading] = useState(false);
   const [activeMatches, setActiveMatches] = useState([]);
+  const [users, setUsers] = useState([]);
 
-  // Mock data for users
-  const users = [
-    { id: 1, name: "John Doe", tier: "bronze", points: 100 },
-    { id: 2, name: "Jane Smith", tier: "gold", points: 500 },
-    { id: 3, name: "Mike Johnson", tier: "silver", points: 250 },
-    { id: 4, name: "Sarah Wilson", tier: "bronze", points: 150 },
-  ];
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setUSerDataLoading(true);
+      try {
+        const response = await fetch(
+          "https://uic-rec-radar.onrender.com/api/users"
+        );
+        if (!response.ok) {
+          throw new Error(`Error fetching users: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setUsers(data); // Set the fetched users
+      } catch (err) {
+        toast.error(err.message);
+      } finally {
+        setUSerDataLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   // Mock active matches - In reality, this would come from your API
   useEffect(() => {
@@ -70,9 +86,11 @@ const ChallengePage = () => {
   const handleChallengeSubmit = async ({ selectedTime, selectedCourt }) => {
     try {
       const challengeData = {
-        challengedUserId: selectedUser.id,
+        challengerId: "1",
+        challengerName: "Jai Pawar",
+        challengedId: selectedUser.id,
         time: selectedTime,
-        court: selectedCourt,
+        // court: selectedCourt,
         date: new Date().toISOString(),
       };
 
@@ -158,7 +176,7 @@ const ChallengePage = () => {
 
         {/* Players List */}
         <div className="grid gap-4">
-          {isLoading ? (
+          {userDataLoading ? (
             <div className="text-center py-4 text-gray-500 dark:text-gray-400">
               Loading players...
             </div>
