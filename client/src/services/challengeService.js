@@ -1,11 +1,20 @@
 export const challengeService = {
   sendChallenge: async (challengeData) => {
-    // Mock API call for now
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true });
-      }, 1000);
-    });
+    fetch("https://uic-rec-radar.onrender.com/api/challenges", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(challengeData),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => console.log("Success:", data))
+      .catch((error) => console.error("Error:", error));
   },
 
   getAvailableTimes: async (date) => {

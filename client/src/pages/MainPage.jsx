@@ -2,6 +2,7 @@ import ChallengeCard from "../components/ChallengeCard";
 import OccupancyCard from "../components/OccupancyCard";
 import LeaderboardCard from "../components/LeaderboardCard";
 import LocationCheckin from "../components/LocationCheckin";
+import MatchRequests from "../components/MatchRequests";
 
 const MainPage = () => {
   return (
@@ -16,6 +17,10 @@ const MainPage = () => {
         <ChallengeCard />
         <OccupancyCard />
         <LeaderboardCard />
+      </div>
+
+      <div className="">
+        <MatchRequests />
       </div>
     </div>
   );
