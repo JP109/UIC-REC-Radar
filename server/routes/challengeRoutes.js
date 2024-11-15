@@ -31,7 +31,7 @@ router.get("/:id", async (req, res) => {
     const { data, error } = await supabase
       .from("challenges")
       .select("*")
-      .eq("id", id)
+      .eq("challenged_id", id)
       .single();
     if (error) throw error;
     res.json(data);
