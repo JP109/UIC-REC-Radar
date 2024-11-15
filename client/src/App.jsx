@@ -7,6 +7,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
 import { ThemeProvider } from "./context/ThemeContext";
 import ToastProvider from "./components/ToastProviderComponent";
+import { Analytics } from "@vercel/analytics/next";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <ToastProvider />
         </div>
       </Router>
+      <Analytics />
     </ThemeProvider>
   );
 }
