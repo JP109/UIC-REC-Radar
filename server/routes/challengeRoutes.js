@@ -5,11 +5,12 @@ const supabase = require("../config/supabaseClient");
 
 // Send a challenge
 router.post("/", async (req, res) => {
-  const { challengerId, challengedId, date, time } = req.body;
+  const { challengerId, challengerName, challengedId, date, time } = req.body;
   try {
     const { data, error } = await supabase.from("challenges").insert([
       {
         challenger_id: challengerId,
+        challenger_name: challengerName,
         challenged_id: challengedId,
         challenge_date: date,
         challenge_time: time,
