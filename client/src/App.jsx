@@ -6,6 +6,7 @@ import OccupancyPage from "./pages/OccupancyPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
 import { ThemeProvider } from "./context/ThemeContext";
+import ToastProvider from "./components/ToastProviderComponent";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
               <Route path="/profile" element={<ProfilePage />} />
             </Routes>
           </div>
+          <ToastProvider />
         </div>
       </Router>
     </ThemeProvider>

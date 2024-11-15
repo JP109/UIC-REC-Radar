@@ -1,14 +1,13 @@
-// src/pages/ChallengePage.jsx
 import { useState } from "react";
-import { Search, Loader } from "lucide-react";
+import { Search } from "lucide-react";
 import ChallengeModal from "../components/ChallengeModal";
 import { challengeService } from "../services";
+
 const ChallengePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTier, setSelectedTier] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [error, setError] = useState(null);
 
   // Mock data
   const users = [
@@ -42,10 +41,9 @@ const ChallengePage = () => {
       };
 
       await challengeService.sendChallenge(challengeData);
-      // a success toast/notification here
+      return Promise.resolve();
     } catch (err) {
-      // error handling
-      throw err;
+      return Promise.reject(err);
     }
   };
 
@@ -54,12 +52,6 @@ const ChallengePage = () => {
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
         Challenge Players
       </h1>
-
-      {error && (
-        <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
-          {error}
-        </div>
-      )}
 
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-grow">

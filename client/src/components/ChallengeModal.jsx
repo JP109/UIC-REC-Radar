@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Calendar, Clock, X, Loader } from "lucide-react";
 import { challengeService } from "../services/challengeService";
+import toast from "react-hot-toast";
 
 const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
   const [selectedTime, setSelectedTime] = useState("");
@@ -9,20 +10,17 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
   const [availableTimes, setAvailableTimes] = useState([]);
   const [availableCourts, setAvailableCourts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch available times when modal opens
   useEffect(() => {
     const fetchTimes = async () => {
       if (isOpen) {
         try {
           setIsLoading(true);
-          setError(null);
           const times = await challengeService.getAvailableTimes(new Date());
           setAvailableTimes(times);
         } catch (err) {
-          setError("Failed to load available times. Please try again.");
+          toast.error("Failed to load available times. Please try again.");
         } finally {
           setIsLoading(false);
         }
@@ -31,20 +29,18 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
     fetchTimes();
   }, [isOpen]);
 
-  // Fetch available courts when time is selected
   useEffect(() => {
     const fetchCourts = async () => {
       if (selectedTime) {
         try {
           setIsLoading(true);
-          setError(null);
           const courts = await challengeService.getAvailableCourts(
             new Date(),
             selectedTime
           );
           setAvailableCourts(courts);
         } catch (err) {
-          setError("Failed to load available courts. Please try again.");
+          toast.error("Failed to load available courts. Please try again.");
         } finally {
           setIsLoading(false);
         }
@@ -54,13 +50,18 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
   }, [selectedTime]);
 
   const handleSubmit = async () => {
+    const loadingToast = toast.loading("Sending challenge...");
     try {
       setIsSubmitting(true);
-      setError(null);
       await onSubmit({ selectedTime, selectedCourt });
+      toast.success(`Challenge sent to ${selectedUser.name}!`, {
+        id: loadingToast,
+      });
       handleClose();
     } catch (err) {
-      setError("Failed to send challenge. Please try again.");
+      toast.error("Failed to send challenge. Please try again.", {
+        id: loadingToast,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -69,7 +70,6 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
   const handleClose = () => {
     setSelectedTime("");
     setSelectedCourt("");
-    setError(null);
     onClose();
   };
 
@@ -108,13 +108,6 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
 
           {/* Modal Body */}
           <div className="p-4 space-y-4">
-            {/* Error Message */}
-            {error && (
-              <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
             {/* Time Selection */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-900 dark:text-white">
