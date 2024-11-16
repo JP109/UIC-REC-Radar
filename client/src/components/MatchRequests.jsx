@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
+import MatchResults from "../components/MatchResults";
+import { Search, Info } from "lucide-react";
 
 const MatchRequests = () => {
   const [challenges, setChallenges] = useState(null); // State to hold the challenge details
+  const [activeMatches, setActiveMatches] = useState([]);
   useEffect(() => {
     fetch(`https://uic-rec-radar.onrender.com/api/challenges/1`)
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Error fetching challenge: ${response.statusText}`);
         }
-        console.log("LLLLL", response);
 
         return response.json();
       })
@@ -17,42 +19,45 @@ const MatchRequests = () => {
         console.log(data);
       });
   }, []);
+
+  const handleMatchComplete = async (matchId) => {
+    try {
+      setChallenges((prevChallenges) =>
+        prevChallenges.filter((match) => match.id !== matchId)
+      );
+
+      toast.success("Match results recorded successfully!");
+    } catch (error) {
+      toast.error("Failed to update match status", error);
+    }
+  };
+
   return (
     <div>
-      <h1>Upcoming matches</h1>
-      {challenges ? (
-        challenges.map((user) => (
-          <div
-            key={user.id}
-            className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex justify-between items-center"
-          >
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">
-                {user.challenger_name}
-              </h3>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                  {/* {user.tier} tier */}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {/* • */}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {/* {user.points} points */}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => openChallengeModal(user)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
-            >
-              Start Match
-            </button>
+      <div className="flex items-center space-x-2">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white pb-5 pt-5">
+          Active Matches
+        </h2>
+        <div className="group relative">
+          <Info className="h-4 w-4 text-gray-400 cursor-help" />
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-48 text-center">
+            Submit match results once the game is complete
           </div>
-        ))
-      ) : (
-        <p>Loading...</p>
-      )}
+        </div>
+      </div>
+      <div className="grid gap-4">
+        {challenges ? (
+          challenges.map((match) => (
+            <MatchResults
+              key={match.id}
+              match={match}
+              onMatchComplete={() => handleMatchComplete(match.id)}
+            />
+          ))
+        ) : (
+          <p>Loading...</p>
+        )}
+      </div>
     </div>
   );
 };
