@@ -117,7 +117,7 @@ const ChallengePage = () => {
   return (
     <div className="space-y-8">
       {/* Active Matches Section */}
-      {activeMatches.length > 0 && (
+      {/* {activeMatches.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -141,7 +141,7 @@ const ChallengePage = () => {
             ))}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Challenge Players Section */}
       <div className="space-y-6">
