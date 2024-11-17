@@ -51,4 +51,49 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Get user points
+router.get("/:id/points", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Fetch the points for the specific user
+    const { data, error } = await supabase
+      .from("users")
+      .select("points")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+
+    res.json({ points: data.points });
+  } catch (err) {
+    console.error("Error fetching user points:", err);
+    res.status(500).json({ error: "Error fetching user points" });
+  }
+});
+
+// Update user points
+router.put("/:id/points", async (req, res) => {
+  const { id } = req.params;
+  const { points } = req.body; // Expect new points value in request body
+
+  if (typeof points !== "number") {
+    return res.status(400).json({ error: "Points must be a number" });
+  }
+
+  try {
+    // Update the points for the specific user
+    const { data, error } = await supabase
+      .from("users")
+      .update({ points })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    res.json({ message: "Points updated successfully", data });
+  } catch (err) {
+    console.error("Error updating user points:", err);
+    res.status(500).json({ error: "Error updating user points" });
+  }
+});
+
 module.exports = router;
