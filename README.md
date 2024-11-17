@@ -26,6 +26,7 @@
 
 - A basic fraud detection mechanism is implemented to prevent users from gaming the system by repeatedly challenging and defeating the same players.
 - Points are adjusted based on the **confidence levels** of both the winner and the loser, ensuring a more authentic and fair points distribution.
+- For eg: If you win a match against Rey Mysterio(check dashboard at the bottom), you get +7 points since Rey has a confidence_level of 99. But if you win a match against the Undertaker, you just get +5 points since the Undertaker has a confidence_level of 43.
 
 ### **5. Live Occupancy**
 
