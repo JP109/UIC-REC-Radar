@@ -1,9 +1,25 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { User, Sun, Moon } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 
 const Navbar = () => {
   const { darkMode, toggleTheme } = useTheme();
+
+  const [points, setPoints] = useState(null);
+  useEffect(() => {
+    fetch(`https://uic-rec-radar.onrender.com/api/users/1/points`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Error fetching challenge: ${response.statusText}`);
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        setPoints(data);
+      });
+  }, []);
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-lg transition-colors duration-200">
@@ -17,6 +33,7 @@ const Navbar = () => {
           </Link>
 
           <div className="flex items-center space-x-4">
+            <div className="pr-2">Points: {points?.points}</div>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -28,7 +45,6 @@ const Navbar = () => {
                 <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
               )}
             </button>
-
             <Link
               to="/profile"
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"

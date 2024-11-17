@@ -74,17 +74,27 @@ router.get("/:id/points", async (req, res) => {
 // Update user points
 router.put("/:id/points", async (req, res) => {
   const { id } = req.params;
-  const { points } = req.body; // Expect new points value in request body
+  const { points } = req.body; // Expect points to be added in request body
 
   if (typeof points !== "number") {
     return res.status(400).json({ error: "Points must be a number" });
   }
 
   try {
-    // Update the points for the specific user
+    // Append the points to the current points for the specific user
+    const { data: user, error: fetchError } = await supabase
+      .from("users")
+      .select("points")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const updatedPoints = user.points + points;
+
     const { data, error } = await supabase
       .from("users")
-      .update({ points })
+      .update({ points: updatedPoints })
       .eq("id", id);
 
     if (error) throw error;

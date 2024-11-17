@@ -18,14 +18,43 @@ const MatchResults = ({ match, onMatchComplete }) => {
       setIsSubmitting(true);
       const loadingToast = toast.loading("Submitting match results...");
 
-      const result = await pointsService.handleMatchCompletion({
-        winnerId: winner,
-        loserId:
-          winner === match.challenged_id
-            ? match.challenged_id
-            : match.challenger_id,
-        matchId: match.id,
-      });
+      // const result = await pointsService.handleMatchCompletion({
+      //   winnerId: winner,
+      //   loserId:
+      //     winner === match.challenged_id
+      //       ? match.challenged_id
+      //       : match.challenger_id,
+      //   matchId: match.id,
+      // });
+
+      // Determine point updates based on the winner
+      const winnerPoints = 5;
+      const loserPoints = -5;
+
+      // Send points update requests to the API
+      await Promise.all([
+        fetch(`https://uic-rec-radar.onrender.com/api/users/${winner}/points`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ points: winnerPoints }),
+        }),
+        fetch(
+          `https://uic-rec-radar.onrender.com/api/users/${
+            winner === match.challenged_id
+              ? match.challenger_id
+              : match.challenged_id
+          }/points`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ points: loserPoints }),
+          }
+        ),
+      ]);
 
       toast.success("Match results recorded successfully!", {
         id: loadingToast,

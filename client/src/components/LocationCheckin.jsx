@@ -12,8 +12,14 @@ const LocationCheckin = () => {
       const loadingToast = toast.loading("Verifying your location...");
 
       const result = await locationService.verifyDailyCheckIn();
-
-      toast.success(`Check-in successful! +${result.pointsEarned} point`, {
+      fetch(`https://uic-rec-radar.onrender.com/api/users/${1}/points`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ points: 1 }),
+      });
+      toast.success(`Check-in successful! +${1} point`, {
         id: loadingToast,
       });
     } catch (error) {
