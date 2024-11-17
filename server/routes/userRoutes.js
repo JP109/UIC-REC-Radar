@@ -26,7 +26,7 @@ router.get("/:id", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, points") // Select relevant columns, including points
+      .select("id, name, email, points, confidence_level") // Select relevant columns, including points
       .eq("id", id)
       .single();
     if (error) throw error;
