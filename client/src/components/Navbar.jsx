@@ -1,25 +1,31 @@
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { User, Sun, Moon } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { usePoints } from "../context/PointsContext";
 
 const Navbar = () => {
   const { darkMode, toggleTheme } = useTheme();
+  const { points, updatePoints } = usePoints();
 
-  const [points, setPoints] = useState(null);
   useEffect(() => {
-    fetch(`https://uic-rec-radar.onrender.com/api/users/1/points`)
-      .then((response) => {
+    const fetchPoints = async () => {
+      try {
+        const response = await fetch(
+          `https://uic-rec-radar.onrender.com/api/users/1/points`
+        );
         if (!response.ok) {
-          throw new Error(`Error fetching challenge: ${response.statusText}`);
+          throw new Error(`Error fetching points: ${response.statusText}`);
         }
+        const data = await response.json();
+        updatePoints(data.points);
+      } catch (error) {
+        console.error("Error fetching points:", error);
+      }
+    };
 
-        return response.json();
-      })
-      .then((data) => {
-        setPoints(data);
-      });
-  }, []);
+    fetchPoints();
+  }, [updatePoints]);
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-lg transition-colors duration-200">
@@ -33,7 +39,7 @@ const Navbar = () => {
           </Link>
 
           <div className="flex items-center space-x-4">
-            <div className="pr-2">Points: {points?.points}</div>
+            <div className="pr-2">Points: {points}</div>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"

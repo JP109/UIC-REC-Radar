@@ -3,10 +3,12 @@ import { useState } from "react";
 import { Trophy, Loader } from "lucide-react";
 import toast from "react-hot-toast";
 import { pointsService } from "../services/pointsService";
+import { usePoints } from "../context/PointsContext";
 
 const MatchResults = ({ match, onMatchComplete }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [winner, setWinner] = useState(null);
+  const { updatePoints } = usePoints();
 
   const handleSubmitResult = async () => {
     if (!winner) {
@@ -18,24 +20,28 @@ const MatchResults = ({ match, onMatchComplete }) => {
       setIsSubmitting(true);
       const loadingToast = toast.loading("Submitting match results...");
 
-      // Determine the loser ID
       const loserId =
         winner === match.challenged_id
           ? match.challenger_id
           : match.challenged_id;
 
-      // Determine point updates based on the winner
       const winnerPoints = await pointsService.determinePointsToUpdate(
         winner,
         loserId
       );
       const loserPoints = -winnerPoints;
 
-      // Use the pointsService to update points
       await Promise.all([
         pointsService.updatePoints(winner, winnerPoints),
         pointsService.updatePoints(loserId, loserPoints),
       ]);
+
+      // Fetch updated points after the match result is submitted
+      const response = await fetch(
+        `https://uic-rec-radar.onrender.com/api/users/1/points`
+      );
+      const data = await response.json();
+      updatePoints(data.points);
 
       toast.success("Match results recorded successfully!", {
         id: loadingToast,
