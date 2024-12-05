@@ -1,4 +1,5 @@
 const API_BASE_URL = "https://uic-rec-radar.onrender.com/api/users";
+import toast from "react-hot-toast";
 
 const TIER_THRESHOLDS = {
   BRONZE: 0,
@@ -7,17 +8,21 @@ const TIER_THRESHOLDS = {
   PLATINUM: 1000,
 };
 
-const MATCH_POINTS = 5;
+// const MATCH_POINTS = 5;
 
 export const pointsService = {
   /**
-   * Update user points.
-   * @param {string} userId - The ID of the user.
-   * @param {number} points - The points to update.
+   * Update user points and show appropriate toast notification
+   * @param {string} userId - The ID of the user
+   * @param {number} points - The points to update (positive for gain, negative for loss)
    * @returns {Promise<void>}
    */
   updatePoints: async (userId, points) => {
     try {
+      const loadingToast = toast.loading(
+        points > 0 ? "Adding points..." : "Updating points..."
+      );
+
       const response = await fetch(`${API_BASE_URL}/${userId}/points`, {
         method: "PUT",
         headers: {
@@ -29,146 +34,138 @@ export const pointsService = {
       if (!response.ok) {
         throw new Error(`Failed to update points for user ${userId}`);
       }
+
+      // Show success toast with appropriate message and icon
+      if (points > 0) {
+        toast.success(`Gained ${points} points! 🎉`, {
+          id: loadingToast,
+          icon: "📈",
+          duration: 3000,
+        });
+      } else {
+        toast.error(`Lost ${Math.abs(points)} points`, {
+          id: loadingToast,
+          icon: "📉",
+          duration: 3000,
+        });
+      }
     } catch (error) {
+      toast.error(`Error updating points: ${error.message}`);
       console.error(`Error updating points for user ${userId}:`, error);
       throw error;
     }
   },
 
   /**
-   * Calculate user's tier based on points.
-   * @param {number} points - The user's total points.
-   * @returns {string} - The user's tier.
+   * Calculate user's tier based on points and show toast if tier changes
+   * @param {number} points - The user's total points
+   * @param {number} previousPoints - The user's previous points total
+   * @returns {string} - The user's tier
    */
-  calculateTier: (points) => {
-    if (points >= TIER_THRESHOLDS.PLATINUM) return "platinum";
-    if (points >= TIER_THRESHOLDS.GOLD) return "gold";
-    if (points >= TIER_THRESHOLDS.SILVER) return "silver";
-    return "bronze";
+  calculateTier: (points, previousPoints) => {
+    const getTier = (p) => {
+      if (p >= TIER_THRESHOLDS.PLATINUM) return "platinum";
+      if (p >= TIER_THRESHOLDS.GOLD) return "gold";
+      if (p >= TIER_THRESHOLDS.SILVER) return "silver";
+      return "bronze";
+    };
+
+    const newTier = getTier(points);
+    const oldTier = getTier(previousPoints);
+
+    // Show toast if user has reached a new tier
+    if (newTier !== oldTier && points > previousPoints) {
+      toast.success(
+        `Congratulations! You've reached ${newTier.toUpperCase()} tier! 🏆`,
+        {
+          duration: 5000,
+          icon: "🌟",
+        }
+      );
+    }
+
+    return newTier;
   },
 
   /**
-   * Handle match completion and point transfer.
-   * @param {Object} matchData - Match details including winner and loser IDs.
-   * @returns {Promise<Object>} - Result of the match processing.
+   * Handle match completion and point transfer with appropriate notifications
+   * @param {Object} matchData - Match details including winner and loser IDs
+   * @returns {Promise<Object>} - Result of the match processing
    */
   handleMatchCompletion: async (matchData) => {
     const { winnerId, loserId, matchId } = matchData;
 
     try {
-      // Update points for winner and loser
+      // Calculate points to award based on confidence levels
+      const pointsToAward = await pointsService.determinePointsToUpdate(
+        winnerId,
+        loserId
+      );
+
+      // Update points for both players
       await Promise.all([
-        pointsService.updatePoints(winnerId, MATCH_POINTS),
-        pointsService.updatePoints(loserId, -MATCH_POINTS),
+        pointsService.updatePoints(winnerId, pointsToAward),
+        pointsService.updatePoints(loserId, -pointsToAward),
       ]);
 
-      // Simulate backend point totals
-      const winnerNewTotal = MATCH_POINTS; // Replace with backend result
-      const loserNewTotal = -MATCH_POINTS; // Replace with backend result
+      // Get updated totals
+      const [winnerData, loserData] = await Promise.all([
+        fetch(`${API_BASE_URL}/${winnerId}`).then((res) => res.json()),
+        fetch(`${API_BASE_URL}/${loserId}`).then((res) => res.json()),
+      ]);
 
       // Calculate new tiers
-      const winnerNewTier = pointsService.calculateTier(winnerNewTotal);
-      const loserNewTier = pointsService.calculateTier(loserNewTotal);
+      const winnerNewTier = pointsService.calculateTier(
+        winnerData.points,
+        winnerData.points - pointsToAward
+      );
+      const loserNewTier = pointsService.calculateTier(
+        loserData.points,
+        loserData.points + pointsToAward
+      );
 
       return {
         success: true,
         winner: {
           userId: winnerId,
-          pointsChange: +MATCH_POINTS,
-          newTotal: winnerNewTotal,
+          pointsChange: pointsToAward,
+          newTotal: winnerData.points,
           newTier: winnerNewTier,
         },
         loser: {
           userId: loserId,
-          pointsChange: -MATCH_POINTS,
-          newTotal: loserNewTotal,
+          pointsChange: -pointsToAward,
+          newTotal: loserData.points,
           newTier: loserNewTier,
         },
         matchId,
       };
     } catch (error) {
-      throw new Error("Failed to process match results");
+      toast.error("Failed to process match results");
+      throw new Error("Failed to process match results", error);
     }
   },
 
-  /**
-   * Verify if a match can be officially started.
-   * @param {Object} matchData - Match details including player IDs and court ID.
-   * @returns {Promise<Object>} - Match verification result.
-   */
-  verifyMatchStart: async (matchData) => {
-    try {
-      const { player1Id, player2Id, courtId } = matchData;
-
-      // Verify both players' locations
-      const [player1Location, player2Location] = await Promise.all([
-        locationService.isNearRECCenter(player1Id), // Ensure function accepts player ID
-        locationService.isNearRECCenter(player2Id), // Ensure function accepts player ID
-      ]);
-
-      if (!player1Location || !player2Location) {
-        throw new Error(
-          "Both players must be at the REC center to start the match"
-        );
-      }
-
-      return {
-        success: true,
-        matchId: "generated-match-id", // Simulate or generate match ID
-        courtId,
-        startTime: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error("Match start verification failed:", error);
-      throw error;
-    }
-  },
-
-  /**
-   * Determine the points to update based on users' confidence levels.
-   * @param {string} winnerId - The ID of the winner.
-   * @param {string} loserId - The ID of the loser.
-   * @returns {Promise<number>} - The points to update (updateWith).
-   */
+  // Rest of the service methods remain unchanged...
   determinePointsToUpdate: async (winnerId, loserId) => {
     try {
-      // Fetch user data from the API
       const [winnerResponse, loserResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/${winnerId}`),
         fetch(`${API_BASE_URL}/${loserId}`),
       ]);
 
-      if (!winnerResponse.ok) {
-        throw new Error(
-          `Failed to fetch winner's data: ${winnerResponse.statusText}`
-        );
-      }
-      if (!loserResponse.ok) {
-        throw new Error(
-          `Failed to fetch loser's data: ${loserResponse.statusText}`
-        );
+      if (!winnerResponse.ok || !loserResponse.ok) {
+        throw new Error("Failed to fetch user data");
       }
 
       const winnerData = await winnerResponse.json();
       const loserData = await loserResponse.json();
 
-      console.log(winnerData, loserData);
-
-      const winnerConfidence = winnerData.confidence_level || 0; // Default to 0 if null
+      const winnerConfidence = winnerData.confidence_level || 0;
       const loserConfidence = loserData.confidence_level || 0;
-
-      // Calculate the updateWith value based on confidence levels
       const confidenceAverage = (winnerConfidence + loserConfidence) / 2;
 
-      // Scale updateWith value based on confidence average
-      const updateWith =
-        confidenceAverage > 80
-          ? 10 // High confidence, large reward
-          : confidenceAverage > 50
-          ? 7 // Medium confidence, medium reward
-          : 5; // Low confidence, small reward
-
-      return updateWith;
+      return confidenceAverage > 80 ? 10 : confidenceAverage > 50 ? 7 : 5;
     } catch (error) {
       console.error("Error determining points to update:", error);
       throw error;

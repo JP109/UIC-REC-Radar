@@ -10,6 +10,10 @@ const MatchResults = ({ match, onMatchComplete }) => {
   const [winner, setWinner] = useState(null);
   const { updatePoints } = usePoints();
 
+  const handleWinnerSelection = (selectedWinnerId) => {
+    setWinner(selectedWinnerId);
+  };
+
   const handleSubmitResult = async () => {
     if (!winner) {
       toast.error("Please select a winner");
@@ -65,7 +69,7 @@ const MatchResults = ({ match, onMatchComplete }) => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <button
-            onClick={() => setWinner(match.challenged_id)}
+            onClick={() => handleWinnerSelection(match.challenged_id)}
             className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
               winner === match.challenged_id
                 ? "bg-green-500 text-white"
@@ -77,7 +81,7 @@ const MatchResults = ({ match, onMatchComplete }) => {
             <span>You Won</span>
           </button>
           <button
-            onClick={() => setWinner(match.challenger_id)}
+            onClick={() => handleWinnerSelection(match.challenger_id)}
             className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${
               winner === match.challenger_id
                 ? "bg-green-500 text-white"
