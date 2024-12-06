@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Trophy, Loader } from "lucide-react";
 import toast from "react-hot-toast";
 import { pointsService } from "../services/pointsService";
+import { locationService } from "../services/locationService";
 import { usePoints } from "../context/PointsContext";
 
 const MatchResults = ({ match, onMatchComplete }) => {
@@ -22,7 +23,23 @@ const MatchResults = ({ match, onMatchComplete }) => {
 
     try {
       setIsSubmitting(true);
-      const loadingToast = toast.loading("Submitting match results...");
+      const loadingToast = toast.loading("Verifying location...");
+
+      // Check if user is at the REC center
+      const isAtRecCenter = await locationService.isNearRECCenter();
+
+      if (!isAtRecCenter) {
+        toast.error("You must be at the REC center to submit match results", {
+          id: loadingToast,
+          duration: 4000,
+        });
+        return;
+      }
+
+      // Update loading message
+      toast.loading("Submitting match results...", {
+        id: loadingToast,
+      });
 
       const loserId =
         winner === match.challenged_id
@@ -55,7 +72,7 @@ const MatchResults = ({ match, onMatchComplete }) => {
         onMatchComplete(match);
       }
     } catch (error) {
-      toast.error("Failed to submit match results", error);
+      toast.error(error.message || "Failed to submit match results");
     } finally {
       setIsSubmitting(false);
     }
