@@ -36,17 +36,55 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Create a new user with default points set to 0
+// // Create a new user with default points set to 0
+// router.post("/", async (req, res) => {
+//   const { name, email } = req.body;
+//   try {
+//     const { data, error } = await supabase
+//       .from("users")
+//       .insert([{ name, email, points: 20 }]) // Initialize points to 0
+//       .single();
+//     if (error) throw error;
+//     res.status(201).json(data);
+//   } catch (err) {
+//     res.status(500).json({ error: "Error creating user" });
+//   }
+// });
+
+// Create a new user with default points set to 20 and passkey details
 router.post("/", async (req, res) => {
-  const { name, email } = req.body;
+  const { name, email, passkey } = req.body;
+
   try {
+    // Parse passkey details
+    const passkeyData = {
+      credential_id: passkey.credential_id,
+      public_key: passkey.public_key,
+      authenticator_attachment: passkey.authenticator_attachment,
+    };
+
+    // Insert user into the database
     const { data, error } = await supabase
       .from("users")
-      .insert([{ name, email, points: 20 }]) // Initialize points to 0
+      .insert([
+        {
+          name,
+          email,
+          points: 0, // Initialize default points
+          confidence_level: 0,
+          skill_level: "beginner",
+          passkey: passkeyData, // Store passkey details
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ])
       .single();
+
     if (error) throw error;
+
     res.status(201).json(data);
   } catch (err) {
+    console.error("Error creating user:", err);
     res.status(500).json({ error: "Error creating user" });
   }
 });
@@ -110,10 +148,6 @@ router.put("/:id/points", async (req, res) => {
 router.put("/:id/confidence", async (req, res) => {
   const { id } = req.params;
   const { winnerId, loserId } = req.body; // Expect points to be added in request body
-
-  if (typeof points !== "number") {
-    return res.status(400).json({ error: "Points must be a number" });
-  }
 
   try {
     const { winner, winnerError } = await supabase

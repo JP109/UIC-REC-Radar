@@ -76,7 +76,42 @@ export const RegisterForm = () => {
       });
 
       console.log("Created credential:", credential);
+
+      // Extract credential details
+      const { id, rawId, response } = credential;
+      const { attestationObject } = response;
+
+      const passkeyData = {
+        credential_id: id, // Unique credential ID
+        public_key: btoa(
+          String.fromCharCode(...new Uint8Array(attestationObject))
+        ), // Base64 encode public key
+        authenticator_attachment: "platform",
+      };
+
+      // Send user details to the backend
+      const res = await fetch("https://uic-rec-radar.onrender.com/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          passkey: passkeyData,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to create user");
+      }
+
+      const data = await res.json();
+      console.log("User created:", data);
+
       localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("tutorialCompleted", "false");
+      localStorage.setItem("justRegistered", "true");
       toast.success("Account created successfully");
       navigate("/app");
     } catch (err) {
@@ -99,6 +134,8 @@ export const RegisterForm = () => {
     try {
       console.log("Traditional registration:", { name, email, password });
       localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("tutorialCompleted", "false");
+      localStorage.setItem("justRegistered", "true");
       toast.success("Account created successfully");
       navigate("/app");
     } catch (err) {

@@ -49,13 +49,16 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <Link
             to="/app"
+            id="navbar-logo"
             className="text-xl font-bold text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200"
           >
             UIC REC RADAR
           </Link>
 
           <div className="flex items-center space-x-4">
-            <div className="pr-2">Points: {points}</div>
+            <div id="points-display" className="pr-2">
+              Points: {points}
+            </div>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -69,6 +72,7 @@ const Navbar = () => {
             </button>
             <Link
               to="/profile"
+              id="profile-button"
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
               aria-label="Profile"
             >
