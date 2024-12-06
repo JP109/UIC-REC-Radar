@@ -5,6 +5,7 @@ import ChallengePage from "./pages/ChallengePage";
 import OccupancyPage from "./pages/OccupancyPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
+import AuthPage from "./pages/AuthPage";
 import { ThemeProvider } from "./context/ThemeContext";
 import { PointsProvider } from "./context/PointsContext";
 import ToastProvider from "./components/ToastProviderComponent";
@@ -23,6 +24,7 @@ function App() {
                 <Route path="/occupancy" element={<OccupancyPage />} />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/auth" element={<AuthPage />} />
               </Routes>
             </div>
             <ToastProvider />
