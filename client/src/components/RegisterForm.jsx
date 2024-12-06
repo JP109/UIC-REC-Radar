@@ -77,6 +77,8 @@ export const RegisterForm = () => {
 
       console.log("Created credential:", credential);
       localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("tutorialCompleted", "false");
+      localStorage.setItem("justRegistered", "true");
       toast.success("Account created successfully");
       navigate("/app");
     } catch (err) {
@@ -99,6 +101,8 @@ export const RegisterForm = () => {
     try {
       console.log("Traditional registration:", { name, email, password });
       localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("tutorialCompleted", "false");
+      localStorage.setItem("justRegistered", "true");
       toast.success("Account created successfully");
       navigate("/app");
     } catch (err) {
