@@ -72,7 +72,6 @@ router.post("/", async (req, res) => {
           email,
           points: 0, // Initialize default points
           confidence_level: 0,
-          skill_level: "beginner",
           passkey: passkeyData, // Store passkey details
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
