@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Loader, Key, Mail } from "lucide-react";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router";
 
 export const RegisterForm = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -9,6 +11,8 @@ export const RegisterForm = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [authMethod, setAuthMethod] = useState(null); // 'passkey' or 'traditional'
+
+  const navigate = useNavigate();
 
   const handlePasskeyRegister = async (e) => {
     e.preventDefault();
@@ -44,6 +48,9 @@ export const RegisterForm = () => {
       });
 
       console.log("Created credential:", credential);
+      localStorage.setItem("isAuthenticated", "true");
+      toast.success("Account created successfully");
+      navigate("/app");
     } catch (err) {
       setError(err.message || "Failed to create passkey. Please try again.");
     } finally {
@@ -64,6 +71,9 @@ export const RegisterForm = () => {
 
     try {
       console.log("Traditional registration:", { name, email, password });
+      localStorage.setItem("isAuthenticated", "true");
+      toast.success("Account created successfully");
+      navigate("/app");
     } catch (err) {
       setError(err.message || "Failed to register. Please try again.");
     } finally {

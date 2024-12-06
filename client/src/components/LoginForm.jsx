@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Loader, Key, Mail } from "lucide-react";
+import { useNavigate } from "react-router";
+import toast from "react-hot-toast";
 
 export const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -7,6 +9,8 @@ export const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authMethod, setAuthMethod] = useState(null); // 'passkey' or 'traditional'
+
+  const navigate = useNavigate();
 
   const handlePasskeyLogin = async (e) => {
     e.preventDefault();
@@ -26,6 +30,9 @@ export const LoginForm = () => {
       });
 
       console.log("Retrieved credential:", credential);
+      localStorage.setItem("isAuthenticated", "true");
+      toast.success("Logged in successfully");
+      navigate("/app");
     } catch (err) {
       setError(err.message || "Failed to authenticate. Please try again.");
     } finally {
@@ -40,6 +47,9 @@ export const LoginForm = () => {
 
     try {
       console.log("Traditional login:", { email, password });
+      localStorage.setItem("isAuthenticated", "true");
+      toast.success("Logged in successfully");
+      navigate("/app");
     } catch (err) {
       setError(err.message || "Failed to login. Please try again.");
     } finally {
