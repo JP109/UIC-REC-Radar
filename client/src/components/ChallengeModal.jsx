@@ -1,23 +1,34 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from "react";
 import { Calendar, Clock, X, Loader } from "lucide-react";
-import { challengeService } from "../services/challengeService";
 import toast from "react-hot-toast";
 
 const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
   const [selectedTime, setSelectedTime] = useState("");
-  const [selectedCourt, setSelectedCourt] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
   const [availableTimes, setAvailableTimes] = useState([]);
-  const [availableCourts, setAvailableCourts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Get today's date in YYYY-MM-DD format for min date
+  const today = new Date().toISOString().split("T")[0];
+
+  // Get date 14 days from today for max date
+  const twoWeeksFromNow = new Date();
+  twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
+  const maxDate = twoWeeksFromNow.toISOString().split("T")[0];
+
   useEffect(() => {
     const fetchTimes = async () => {
-      if (isOpen) {
+      if (isOpen && selectedDate) {
         try {
           setIsLoading(true);
-          const times = await challengeService.getAvailableTimes(new Date());
+          // Generate time slots from 6 AM to 10 PM
+          const times = [];
+          for (let hour = 6; hour <= 22; hour++) {
+            const formattedHour = hour.toString().padStart(2, "0");
+            times.push(`${formattedHour}:00`);
+          }
           setAvailableTimes(times);
         } catch (err) {
           toast.error("Failed to load available times. Please try again.");
@@ -27,33 +38,18 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
       }
     };
     fetchTimes();
-  }, [isOpen]);
-
-  useEffect(() => {
-    const fetchCourts = async () => {
-      if (selectedTime) {
-        try {
-          setIsLoading(true);
-          const courts = await challengeService.getAvailableCourts(
-            new Date(),
-            selectedTime
-          );
-          setAvailableCourts(courts);
-        } catch (err) {
-          toast.error("Failed to load available courts. Please try again.");
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    fetchCourts();
-  }, [selectedTime]);
+  }, [isOpen, selectedDate]);
 
   const handleSubmit = async () => {
+    if (!selectedDate || !selectedTime) {
+      toast.error("Please select both date and time");
+      return;
+    }
+
     const loadingToast = toast.loading("Sending challenge...");
     try {
       setIsSubmitting(true);
-      await onSubmit({ selectedTime, selectedCourt });
+      await onSubmit({ selectedTime, selectedDate });
       toast.success(`Challenge sent to ${selectedUser.name}!`, {
         id: loadingToast,
       });
@@ -69,7 +65,7 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
 
   const handleClose = () => {
     setSelectedTime("");
-    setSelectedCourt("");
+    setSelectedDate("");
     onClose();
   };
 
@@ -102,23 +98,40 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
               </button>
             </div>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Set up your match details below.
+              Select your preferred date and time for the match
             </p>
           </div>
 
           {/* Modal Body */}
           <div className="p-4 space-y-4">
+            {/* Date Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                Date
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  min={today}
+                  max={maxDate}
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
             {/* Time Selection */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">
                 Time
               </label>
               <div className="relative">
                 <select
                   value={selectedTime}
                   onChange={(e) => setSelectedTime(e.target.value)}
-                  disabled={isLoading || isSubmitting}
-                  className="w-full px-3 py-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                  disabled={!selectedDate || isLoading}
+                  className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select time</option>
                   {availableTimes.map((time) => (
@@ -133,36 +146,11 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
               </div>
             </div>
 
-            {/* Court Selection */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-900 dark:text-white">
-                Court
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedCourt}
-                  onChange={(e) => setSelectedCourt(e.target.value)}
-                  disabled={!selectedTime || isLoading || isSubmitting}
-                  className="w-full px-3 py-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
-                >
-                  <option value="">Select court</option>
-                  {availableCourts.map((court) => (
-                    <option key={court} value={court}>
-                      {court}
-                    </option>
-                  ))}
-                </select>
-                {isLoading && (
-                  <Loader className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
-                )}
-              </div>
-            </div>
-
             {/* Information Notes */}
             <div className="space-y-2">
               <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <Calendar className="mr-2 h-4 w-4" />
-                <span>Match will be scheduled for today</span>
+                <span>You can schedule matches up to 2 weeks in advance</span>
               </div>
               <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <Clock className="mr-2 h-4 w-4" />
@@ -184,7 +172,7 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
             </button>
             <button
               onClick={handleSubmit}
-              disabled={!selectedTime || !selectedCourt || isSubmitting}
+              disabled={!selectedDate || !selectedTime || isSubmitting}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               {isSubmitting ? (

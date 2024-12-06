@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Search, Info } from "lucide-react";
+import { Search } from "lucide-react";
 import ChallengeModal from "../components/ChallengeModal";
-import MatchResults from "../components/MatchResults";
 import { challengeService } from "../services";
 import toast from "react-hot-toast";
 
@@ -83,15 +82,14 @@ const ChallengePage = () => {
     setSelectedUser(null);
   };
 
-  const handleChallengeSubmit = async ({ selectedTime, selectedCourt }) => {
+  const handleChallengeSubmit = async ({ selectedTime, selectedDate }) => {
     try {
       const challengeData = {
         challengerId: "1",
         challengerName: "Jai Pawar",
         challengedId: selectedUser.id,
         time: selectedTime,
-        // court: selectedCourt,
-        date: new Date().toISOString(),
+        date: selectedDate,
       };
 
       await challengeService.sendChallenge(challengeData);
