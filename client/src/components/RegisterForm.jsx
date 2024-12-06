@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { Loader, Key, Mail } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader, Key, Mail, EyeOff, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
+import PasswordRequirements from "./PasswordRequirements";
+import { validatePassword } from "../utils/passwordValidation";
 
 export const RegisterForm = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,8 +13,34 @@ export const RegisterForm = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [authMethod, setAuthMethod] = useState(null); // 'passkey' or 'traditional'
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordRequirements, setPasswordRequirements] = useState([]);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (password) {
+      setPasswordRequirements(validatePassword(password));
+    }
+  }, [password]);
+
+  const validateForm = () => {
+    // Check if all password requirements are met
+    const allRequirementsMet = passwordRequirements.every((req) => req.valid);
+
+    if (!allRequirementsMet) {
+      setError("Please meet all password requirements");
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return false;
+    }
+
+    return true;
+  };
 
   const handlePasskeyRegister = async (e) => {
     e.preventDefault();
@@ -60,14 +88,13 @@ export const RegisterForm = () => {
 
   const handleTraditionalRegister = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
+    if (!validateForm()) {
       return;
     }
+
+    setIsLoading(true);
 
     try {
       console.log("Traditional registration:", { name, email, password });
@@ -185,15 +212,29 @@ export const RegisterForm = () => {
                 >
                   Password
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+                <div className="mt-1 relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+                <PasswordRequirements requirements={passwordRequirements} />
               </div>
 
               <div>
@@ -203,15 +244,28 @@ export const RegisterForm = () => {
                 >
                   Confirm Password
                 </label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+                <div className="mt-1 relative">
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </>
           )}
