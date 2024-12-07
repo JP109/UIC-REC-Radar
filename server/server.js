@@ -13,10 +13,12 @@ app.use(express.json());
 
 // Import Routes
 const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
 const challengeRoutes = require("./routes/challengeRoutes");
 
 // Use Routes
 app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/challenges", challengeRoutes);
 
 // Start Server

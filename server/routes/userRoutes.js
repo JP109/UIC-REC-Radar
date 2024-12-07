@@ -2,9 +2,31 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabaseClient");
+const jwt = require("jsonwebtoken");
+
+const JWT_SECRET = process.env.JWT_SECRET; // Same secret used for signing tokens
+
+// Middleware to authenticate JWT
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
+
+    req.user = user; // Attach the user data (from the token) to the request
+    next();
+  });
+};
 
 // Get all users including their points for leaderboard
-router.get("/", async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     console.log("Connecting to Supabase...");
     const { data, error } = await supabase
@@ -21,8 +43,9 @@ router.get("/", async (req, res) => {
 });
 
 // Get a specific user by ID, including points
-router.get("/:id", async (req, res) => {
-  const { id } = req.params;
+router.get("/:id", authenticateToken, async (req, res) => {
+  // const { id } = req.params;
+  const { id } = req.user.id;
   try {
     const { data, error } = await supabase
       .from("users")
