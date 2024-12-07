@@ -109,44 +109,44 @@ export const RegisterForm = () => {
       const data = await res.json();
       console.log("User created:", data);
 
-      // Immediately log in the user
-      const assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: new Uint8Array(32), // Server-generated challenge
-          allowCredentials: [
-            {
-              id: Uint8Array.from(window.atob(passkeyData.credential_id), (c) =>
-                c.charCodeAt(0)
-              ),
-              type: "public-key",
-            },
-          ],
-          userVerification: "required",
-        },
-      });
+      // // Immediately log in the user
+      // const assertion = await navigator.credentials.get({
+      //   publicKey: {
+      //     challenge: new Uint8Array(32), // Server-generated challenge
+      //     allowCredentials: [
+      //       {
+      //         id: Uint8Array.from(window.atob(passkeyData.credential_id), (c) =>
+      //           c.charCodeAt(0)
+      //         ),
+      //         type: "public-key",
+      //       },
+      //     ],
+      //     userVerification: "required",
+      //   },
+      // });
 
-      console.log("Authenticated:", assertion);
+      // console.log("Authenticated:", assertion);
 
-      // Send assertion to the backend for verification
-      const loginRes = await fetch(
-        "https://uic-rec-radar.onrender.com/api/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ assertion, email }),
-        }
-      );
+      // // Send assertion to the backend for verification
+      // const loginRes = await fetch(
+      //   "https://uic-rec-radar.onrender.com/api/auth/login",
+      //   {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     },
+      //     body: JSON.stringify({ assertion, email }),
+      //   }
+      // );
 
-      if (!loginRes.ok) {
-        throw new Error("Failed to log in");
-      }
+      // if (!loginRes.ok) {
+      //   throw new Error("Failed to log in");
+      // }
 
-      const loginData = await loginRes.json();
-      console.log("Login successful:", loginData);
+      // const loginData = await loginRes.json();
+      // console.log("Login successful:", loginData);
 
-      localStorage.setItem("jwt", loginData.token);
+      // localStorage.setItem("jwt", loginData.token);
       localStorage.setItem("isAuthenticated", "true");
       localStorage.setItem("tutorialCompleted", "false");
       localStorage.setItem("justRegistered", "true");
