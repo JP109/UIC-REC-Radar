@@ -1,400 +1,193 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabaseClient");
-const { verifyAuthenticationResponse } = require("@simplewebauthn/server");
+const {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} = require("@simplewebauthn/server");
 const jwt = require("jsonwebtoken");
+const rpID = process.env.RP_ID;
+const rpName = process.env.RP_NAME;
+
+let challengeMap = new Map();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-router.post("/login", async (req, res) => {
-  const { assertion, email } = req.body;
+// Function to generate JWT token
+function generateToken(email) {
+  return jwt.sign({ email }, JWT_SECRET, {
+    expiresIn: "1h",
+  }); /** Added JWT generation */
+}
 
-  try {
-    // Retrieve user details from the database
-    const { data: user, error } = await supabase
+// Begin Registration
+router.post("/options", async (req, res) => {
+  const { email } = req.body;
+  const userID = new TextEncoder().encode(email);
+  // console.log(rpName, rpID, userID, email);
+
+  const options = await generateRegistrationOptions({
+    rpName,
+    rpID,
+    userID,
+    userName: email,
+  });
+
+  // console.log("Options (raw):", options);
+
+  challengeMap.set(email, options.challenge);
+  // console.log("Stored Challenge:", challengeMap.get(email));
+
+  res.json(options);
+});
+
+// Complete Registration
+router.post("/verify", async (req, res) => {
+  const { name, email, credential } = req.body;
+  const expectedChallenge = challengeMap.get(email);
+
+  const userID = new TextEncoder().encode(email);
+
+  const verification = await verifyRegistrationResponse({
+    response: credential,
+    expectedChallenge,
+    expectedRPID: rpID,
+    expectedOrigin: `http://${rpID}`,
+    expectedUserID: userID,
+  });
+
+  console.log("Verification", verification);
+
+  if (verification.verified) {
+    // Insert user into the database
+    const { data, error } = await supabase
       .from("users")
-      .select("email, passkey")
-      .eq("email", email)
+      .insert([
+        {
+          name,
+          email,
+          points: 0, // Initialize default points
+          confidence_level: 0,
+          // passkey: passkey,
+          passkey: JSON.stringify(verification.registrationInfo), // Store passkey details
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ])
       .single();
 
-    if (error || !user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (error) throw error;
 
-    // Verify the assertion
-    const credentialId = Uint8Array.from(
-      atob(user.passkey.credential_id),
-      (c) => c.charCodeAt(0)
-    );
-    const publicKey = atob(user.passkey.public_key);
+    res.status(201).json(data);
+    // } catch (err) {
+    //   console.error("Error creating user:", err);
+    //   res.status(500).json({ error: "Error creating user" });
+    // }
 
-    const verified = await verifyWebAuthnAssertion(assertion, {
-      credentialId,
-      publicKey,
-      challenge: new Uint8Array(32), // Server-generated challenge
-    });
-
-    if (!verified) {
-      return res.status(401).json({ error: "Authentication failed" });
-    }
-
-    // Generate a JWT for the user
-    const token = jwt.sign(
-      {
-        email: user.email,
-        id: user.id, // Include other relevant data as needed
-      },
-      JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.status(200).json({ token });
-  } catch (err) {
-    console.error("Error during login:", err);
-    res.status(500).json({ error: "Login failed" });
+    // if (error) return res.status(500).json({ error: error.message });
+    // res.json({ success: true });
+  } else {
+    res.status(400).json({ error: "Verification failed" });
   }
 });
 
-async function verifyWebAuthnAssertion(assertion, storedCredential) {
-  try {
-    const verification = verifyAuthenticationResponse({
-      credential: assertion,
-      expectedChallenge: storedCredential.challenge,
-      expectedRPID: "your-rp-id",
-      expectedOrigin: "https://your-domain.com",
-      expectedCredentialID: storedCredential.credentialId,
-      expectedPublicKey: storedCredential.publicKey,
-    });
+// Begin Login
+router.post("/passkey/options", async (req, res) => {
+  const { email } = req.body;
+  // console.log("Email", email);
+  const { data, error } = await supabase
+    .from("users")
+    .select("passkey")
+    .eq("email", email)
+    .single();
 
-    return verification.verified;
-  } catch (err) {
-    console.error("WebAuthn verification failed:", err);
-    return false;
+  if (error || !data)
+    return res.status(404).json({ error: "User not found", val: error });
+
+  // console.log("Data", data);
+
+  const credential = JSON.parse(data.passkey);
+  // console.log("CREDENTIAL", credential);
+  const options = await generateAuthenticationOptions({
+    rpID,
+    userVerification: "preferred",
+    allowCredentials: [{ id: credential.credential.id, type: "public-key" }],
+  });
+  // console.log("OPTIONSSSS", options);
+
+  challengeMap.set(email, options.challenge);
+
+  res.json(options);
+});
+
+// Complete Login
+router.post("/passkey/verify", async (req, res) => {
+  const { email, credential } = req.body;
+  console.log("AAAAA", email, credential);
+  const expectedChallenge = challengeMap.get(email);
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("passkey")
+    .eq("email", email)
+    .single();
+
+  if (error || !data)
+    return res.status(404).json({ error: "User not found", error: error });
+
+  const storedCredential = JSON.parse(data.passkey);
+  // console.log("SC", storedCredential);
+
+  // console.log(
+  //   "Type of publicKey:",
+  //   typeof storedCredential.credential.publicKey
+  // );
+  // console.log("Value of publicKey:", storedCredential.credential.publicKey);
+
+  const authenticator = {
+    // id: Buffer.from(storedCredential.credential.id, "base64"),
+    id: storedCredential.credential.id,
+    // publicKey: Buffer.from(storedCredential.credential.publicKey, "base64"),
+    // publicKey: new Uint8Array(
+    //   Buffer.from(storedCredential.credential.publicKey, "base64")
+    // ),
+    publicKey: new Uint8Array(
+      Object.values(storedCredential.credential.publicKey)
+    ),
+    counter: storedCredential.credential.counter,
+    // transports: storedCredential.credential.transports,
+  };
+
+  const verification = await verifyAuthenticationResponse({
+    response: credential,
+    expectedChallenge,
+    expectedRPID: rpID,
+    expectedOrigin: `https://${rpID}`,
+    expectedOrigin: `https://${rpID}`,
+    // credential: storedCredential.credential,
+    credential: authenticator,
+  });
+
+  // console.log("VRRRRRR", verification);
+
+  if (verification.verified) {
+    const token = generateToken(email); /** Added JWT token generation */
+    res.json({ success: true, token }); /** Sent JWT token in response */
+  } else {
+    res.status(400).json({ error: "Authentication failed" });
   }
-}
+});
 
-module.exports = router;
-
-// const crypto = require("crypto"); // For challenge validation
-
-// // Traditional Registration
-// router.post("/register", async (req, res) => {
-//   const { name, email, password } = req.body;
-
-//   // Input validation
-//   if (!name || !email || !password) {
-//     return res.status(400).json({ error: "Missing required fields" });
-//   }
-
-//   try {
-//     // Check if user already exists
-//     const { data: existingUser, error: checkError } = await supabase
-//       .from("users")
-//       .select("*")
-//       .eq("email", email)
-//       .single();
-
-//     if (existingUser) {
-//       return res.status(409).json({ error: "User already exists" });
-//     }
-
-//     // Hash password
-//     const saltRounds = 10;
-//     const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-//     // Create user in Supabase
-//     const { data, error } = await supabase
-//       .from("users")
-//       .insert([
-//         {
-//           name,
-//           email,
-//           password_hash: hashedPassword,
-//           points: 0,
-//           confidence_level: 0,
-//           created_at: new Date().toISOString(),
-//           updated_at: new Date().toISOString(),
-//         },
-//       ])
-//       .single();
-
-//     if (error) throw error;
-
-//     // Generate JWT
-//     const token = jwt.sign(
-//       { id: data.id, email: data.email },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "24h" }
-//     );
-
-//     res.status(201).json({
-//       user: {
-//         id: data.id,
-//         name: data.name,
-//         email: data.email,
-//       },
-//       token,
-//     });
-//   } catch (err) {
-//     console.error("Registration error:", err);
-//     res.status(500).json({ error: "Registration failed" });
-//   }
-// });
-
-// // Traditional Login
 // router.post("/login", async (req, res) => {
-//   const { email, password } = req.body;
+//   const { assertion, email } = req.body;
 
 //   try {
-//     // Fetch user by email
-//     const { data: user, error: fetchError } = await supabase
-//       .from("users")
-//       .select("*")
-//       .eq("email", email)
-//       .single();
-
-//     if (fetchError || !user) {
-//       return res.status(401).json({ error: "Invalid credentials" });
-//     }
-
-//     // Compare passwords
-//     const isMatch = await bcrypt.compare(password, user.password_hash);
-
-//     if (!isMatch) {
-//       return res.status(401).json({ error: "Invalid credentials" });
-//     }
-
-//     // Generate JWT
-//     const token = jwt.sign(
-//       { id: user.id, email: user.email },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "24h" }
-//     );
-
-//     res.json({
-//       user: {
-//         id: user.id,
-//         name: user.name,
-//         email: user.email,
-//       },
-//       token,
-//     });
-//   } catch (err) {
-//     console.error("Login error:", err);
-//     res.status(500).json({ error: "Login failed" });
-//   }
-// });
-
-// // Passkey Registration Initiation
-// router.post("/passkey/register-start", async (req, res) => {
-//   const { email, name } = req.body;
-
-//   try {
-//     // Check if user already exists
-//     const { data: existingUser, error: checkError } = await supabase
-//       .from("users")
-//       .select("*")
-//       .eq("email", email)
-//       .single();
-
-//     if (existingUser) {
-//       return res.status(409).json({ error: "User already exists" });
-//     }
-
-//     // Generate passkey registration options
-//     // This would use @simplewebauthn/server to generate challenges
-//     const options = generateRegistrationOptions({
-//       rpName: "Your App Name",
-//       rpID: process.env.RP_ID, // Your domain
-//       userID: generateRandomID(), // Generate a unique user ID
-//       userName: email,
-//       attestationType: "none",
-//       excludeCredentials: [], // Optional: prevent re-registration
-//       authenticatorSelection: {
-//         userVerification: "preferred",
-//         residentKey: "preferred",
-//       },
-//     });
-
-//     // Store challenge temporarily (you might use Redis or another temporary storage)
-//     await storeChallenge(options.challenge, { email, name });
-
-//     res.json(options);
-//   } catch (err) {
-//     console.error("Passkey registration start error:", err);
-//     res.status(500).json({ error: "Passkey registration failed" });
-//   }
-// });
-
-// // Passkey Registration Completion
-// router.post("/passkey/register-complete", async (req, res) => {
-//   const { attestationResponse, email, name } = req.body;
-
-//   try {
-//     // Verify the attestation
-//     const verification = await verifyRegistrationResponse({
-//       response: attestationResponse,
-//       expectedChallenge: retrieveChallenge(), // Retrieve stored challenge
-//       expectedOrigin: process.env.EXPECTED_ORIGIN,
-//       expectedRPID: process.env.RP_ID,
-//     });
-
-//     if (!verification.verified) {
-//       return res
-//         .status(400)
-//         .json({ error: "Registration verification failed" });
-//     }
-
-//     // Extract passkey credentials
-//     const { credentialPublicKey, credentialID } = verification.registrationInfo;
-
-//     // Create user in Supabase with passkey details
-//     const { data, error } = await supabase
-//       .from("users")
-//       .insert([
-//         {
-//           name,
-//           email,
-//           passkey: {
-//             credential_id: credentialID.toString("base64"),
-//             public_key: credentialPublicKey.toString("base64"),
-//             authenticator_attachment:
-//               attestationResponse.authenticatorAttachment,
-//           },
-//           points: 0,
-//           confidence_level: 0,
-//           created_at: new Date().toISOString(),
-//           updated_at: new Date().toISOString(),
-//         },
-//       ])
-//       .single();
-
-//     if (error) throw error;
-
-//     // Generate JWT
-//     const token = jwt.sign(
-//       { id: data.id, email: data.email },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "24h" }
-//     );
-
-//     res.status(201).json({
-//       user: {
-//         id: data.id,
-//         name: data.name,
-//         email: data.email,
-//       },
-//       token,
-//     });
-//   } catch (err) {
-//     console.error("Passkey registration completion error:", err);
-//     res.status(500).json({ error: "Passkey registration failed" });
-//   }
-// });
-
-// // Passkey Login Initiation
-// router.post("/passkey/login-start", async (req, res) => {
-//   const { email } = req.body;
-
-//   try {
-//     // Fetch user by email
-//     const { data: user, error: fetchError } = await supabase
-//       .from("users")
-//       .select("*")
-//       .eq("email", email)
-//       .single();
-
-//     if (fetchError || !user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-
-//     // Generate login options
-//     const options = generateAuthenticationOptions({
-//       rpID: process.env.RP_ID,
-//       userVerification: "preferred",
-//       allowCredentials: [
-//         {
-//           id: Buffer.from(user.passkey.credential_id, "base64"),
-//           type: "public-key",
-//           transports: ["internal", "hybrid", "smart-card"],
-//         },
-//       ],
-//     });
-
-//     // Store challenge temporarily
-//     await storeChallenge(options.challenge, { email: user.email });
-
-//     res.json(options);
-//   } catch (err) {
-//     console.error("Passkey login start error:", err);
-//     res.status(500).json({ error: "Passkey login failed" });
-//   }
-// });
-
-// // Passkey Login Completion
-// router.post("/passkey/login-complete", async (req, res) => {
-//   const { authenticationResponse, email } = req.body;
-
-//   try {
-//     // Fetch user by email
-//     const { data: user, error: fetchError } = await supabase
-//       .from("users")
-//       .select("*")
-//       .eq("email", email)
-//       .single();
-
-//     if (fetchError || !user) {
-//       return res.status(404).json({ error: "User not found" });
-//     }
-
-//     // Verify authentication response
-//     const verification = await verifyAuthenticationResponse({
-//       response: authenticationResponse,
-//       expectedChallenge: retrieveChallenge(), // Retrieve stored challenge
-//       expectedOrigin: process.env.EXPECTED_ORIGIN,
-//       expectedRPID: process.env.RP_ID,
-//       authenticator: {
-//         credentialID: Buffer.from(user.passkey.credential_id, "base64"),
-//         credentialPublicKey: Buffer.from(user.passkey.public_key, "base64"),
-//       },
-//     });
-
-//     if (!verification.verified) {
-//       return res
-//         .status(400)
-//         .json({ error: "Authentication verification failed" });
-//     }
-
-//     // Generate JWT
-//     const token = jwt.sign(
-//       { id: user.id, email: user.email },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "24h" }
-//     );
-
-//     res.json({
-//       user: {
-//         id: user.id,
-//         name: user.name,
-//         email: user.email,
-//       },
-//       token,
-//     });
-//   } catch (err) {
-//     console.error("Passkey login completion error:", err);
-//     res.status(500).json({ error: "Passkey login failed" });
-//   }
-// });
-
-// // User Login Route
-// router.post("/login", async (req, res) => {
-//   const { email, passkey } = req.body;
-
-//   try {
-//     // Fetch user by email
+//     // Retrieve user details from the database
 //     const { data: user, error } = await supabase
 //       .from("users")
-//       .select("id, name, email, passkey")
+//       .select("email, passkey")
 //       .eq("email", email)
 //       .single();
 
@@ -402,53 +195,59 @@ module.exports = router;
 //       return res.status(404).json({ error: "User not found" });
 //     }
 
-//     // Parse stored passkey data
-//     const { credential_id, public_key } = user.passkey;
+//     // Decode the stored passkey credential ID
+//     const credentialId = Uint8Array.from(
+//       atob(user.passkey.credential_id),
+//       (c) => c.charCodeAt(0)
+//     );
+//     // // Decode the stored passkey credential ID
+//     // const credentialId = user.passkey.credential_id;
 
-//     // Prepare a challenge for passkey verification
-//     const challenge = crypto.randomBytes(32).toString("base64url");
-
-//     // Verify the passkey (using WebAuthn API in browser or a library like `fido2-lib` in backend)
-//     const verificationResult = await verifyPasskey({
-//       credentialId: credential_id,
-//       publicKey,
-//       challenge,
-//       clientDataJSON: passkey.clientDataJSON, // Provided by client
-//       authenticatorData: passkey.authenticatorData, // Provided by client
-//       signature: passkey.signature, // Provided by client
+//     // Verify the WebAuthn assertion using the SimpleWebAuthn server library
+//     const verified = await verifyWebAuthnAssertion(assertion, {
+//       credentialId,
+//       challenge: new Uint8Array(32), // Server-generated challenge
+//       expectedRPID: "localhost", // Replace with your RP ID
+//       expectedOrigin: "http://localhost:5000", // Replace with your origin
 //     });
 
-//     if (!verificationResult.success) {
-//       return res.status(401).json({ error: "Invalid passkey credentials" });
+//     if (!verified) {
+//       return res.status(401).json({ error: "Authentication failed" });
 //     }
 
-//     // Generate a session token (e.g., JWT) for user authentication
-//     const sessionToken = generateJwtToken(user.id); // Use a helper function to create a JWT
+//     // Generate a JWT for the user
+//     const token = jwt.sign(
+//       {
+//         email: user.email,
+//         id: user.id, // Include other relevant data as needed
+//       },
+//       JWT_SECRET,
+//       { expiresIn: "1h" }
+//     );
 
-//     res.status(200).json({ message: "Login successful", token: sessionToken });
+//     res.status(200).json({ token });
 //   } catch (err) {
-//     console.error("Login error:", err);
-//     res.status(500).json({ error: "Internal server error" });
+//     console.error("Error during login:", err);
+//     res.status(500).json({ error: "Login failed" });
 //   }
 // });
 
-// // Helper: Generate JWT Token
-// const generateJwtToken = (userId) => {
-//   const jwt = require("jsonwebtoken");
-//   const secretKey = "your_secret_key"; // Replace with a secure key from .env
-//   return jwt.sign({ userId }, secretKey, { expiresIn: "1h" });
-// };
+// async function verifyWebAuthnAssertion(assertion, storedCredential) {
+//   try {
+//     const verification = verifyAuthenticationResponse({
+//       response: assertion.response,
+//       credential: assertion,
+//       expectedChallenge: storedCredential.challenge,
+//       expectedRPID: storedCredential.expectedRPID,
+//       expectedOrigin: storedCredential.expectedOrigin,
+//       expectedCredentialID: storedCredential.credentialId,
+//     });
 
-// // Helper: Verify Passkey (Mock Implementation)
-// const verifyPasskey = async ({
-//   credentialId,
-//   publicKey,
-//   challenge,
-//   clientDataJSON,
-//   authenticatorData,
-//   signature,
-// }) => {
-//   // Use a WebAuthn verification library (e.g., `fido2-lib`) to validate these details
-//   // For now, we'll mock a successful result
-//   return { success: true };
-// };
+//     return verification.verified;
+//   } catch (err) {
+//     console.error("WebAuthn verification failed:", err);
+//     return false;
+//   }
+// }
+
+module.exports = router;

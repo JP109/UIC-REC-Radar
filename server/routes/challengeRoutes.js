@@ -2,6 +2,29 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabaseClient");
+const jwt = require("jsonwebtoken");
+
+const JWT_SECRET = process.env.JWT_SECRET; // Same secret used for signing tokens
+
+// Middleware to authenticate JWT
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
+    console.log("TK", token, user);
+
+    req.email = user; // Attach the user data (from the token) to the request
+    next();
+  });
+};
 
 // Send a challenge
 router.post("/", async (req, res) => {
@@ -26,31 +49,60 @@ router.post("/", async (req, res) => {
 });
 
 // Get a specific challenge by ID
-router.get("/:id", async (req, res) => {
-  const { id } = req.params;
+router.get("/", authenticateToken, async (req, res) => {
+  const { email } = req.email;
+  console.log("EM", email);
   try {
-    const { data, error } = await supabase
+    // Fetch user ID from users table using email
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Fetch challenges sent to the user
+    const { data: challenges, error: challengesError } = await supabase
       .from("challenges")
       .select("*")
-      .eq("challenged_id", Number(id));
-    if (error) throw error;
-    res.json(data);
+      .eq("challenged_id", user.id);
+
+    if (challengesError) {
+      throw challengesError;
+    }
+    console.log("CHALLENGES", email, user, challenges);
+
+    res.json(challenges);
   } catch (err) {
-    res.status(500).json({ error: "Error fetching challenge" });
+    console.error("Error fetching challenges:", err);
+    res.status(500).json({ error: "Error fetching challenges" });
   }
+  // try {
+  //   const { data, error } = await supabase
+  //     .from("challenges")
+  //     .select("*")
+  //     .eq("challenged_id", Number(id));
+  //   if (error) throw error;
+  //   res.json(data);
+  // } catch (err) {
+  //   res.status(500).json({ error: "Error fetching challenge" });
+  // }
 });
 
-// Get all challenges
-router.get("/", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { data, error } = await supabase.from("challenges").select("*");
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: "Error fetching challenge" });
-  }
-});
+// // Get all challenges
+// router.get("/", async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     const { data, error } = await supabase.from("challenges").select("*");
+//     if (error) throw error;
+//     res.json(data);
+//   } catch (err) {
+//     res.status(500).json({ error: "Error fetching challenge" });
+//   }
+// });
 
 // Update challenge status to "completed" and update points (example of resolving a challenge)
 router.put("/complete/:id", async (req, res) => {

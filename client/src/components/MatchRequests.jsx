@@ -5,8 +5,15 @@ import { Search, Info } from "lucide-react";
 const MatchRequests = () => {
   const [challenges, setChallenges] = useState(null); // State to hold the challenge details
   const [activeMatches, setActiveMatches] = useState([]);
+  const token = localStorage.getItem("authToken");
+
   useEffect(() => {
-    fetch(`https://uic-rec-radar.onrender.com/api/challenges/1`)
+    fetch(`https://uic-rec-radar.onrender.com/api/challenges`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Error fetching challenge: ${response.statusText}`);

@@ -17,8 +17,8 @@ const authRoutes = require("./routes/authRoutes");
 const challengeRoutes = require("./routes/challengeRoutes");
 
 // Use Routes
-app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/challenges", challengeRoutes);
 
 // Start Server

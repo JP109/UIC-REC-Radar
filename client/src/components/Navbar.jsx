@@ -9,12 +9,19 @@ const Navbar = () => {
   const { darkMode, toggleTheme } = useTheme();
   const { points, updatePoints } = usePoints();
   const navigate = useNavigate();
+  const token = localStorage.getItem("authToken");
 
   useEffect(() => {
     const fetchPoints = async () => {
       try {
         const response = await fetch(
-          `https://uic-rec-radar.onrender.com/api/users/1/points`
+          `https://uic-rec-radar.onrender.com/api/users/points`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (!response.ok) {
           throw new Error(`Error fetching points: ${response.statusText}`);

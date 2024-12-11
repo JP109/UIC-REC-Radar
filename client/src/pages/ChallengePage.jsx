@@ -13,13 +13,21 @@ const ChallengePage = () => {
   const [userDataLoading, setUSerDataLoading] = useState(false);
   const [activeMatches, setActiveMatches] = useState([]);
   const [users, setUsers] = useState([]);
+  const token = localStorage.getItem("authToken");
+  const [currentUser, setCurrentUser] = useState();
 
   useEffect(() => {
     const fetchUsers = async () => {
       setUSerDataLoading(true);
       try {
         const response = await fetch(
-          "https://uic-rec-radar.onrender.com/api/users"
+          "https://uic-rec-radar.onrender.com/api/users",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (!response.ok) {
           throw new Error(`Error fetching users: ${response.statusText}`);
@@ -32,8 +40,28 @@ const ChallengePage = () => {
         setUSerDataLoading(false);
       }
     };
-
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch(
+          "https://uic-rec-radar.onrender.com/api/users/user",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Error fetching users: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setCurrentUser(data); // Set the fetched users
+      } catch (err) {
+        toast.error(err.message);
+      }
+    };
     fetchUsers();
+    fetchCurrentUser();
   }, []);
 
   // Mock active matches - In reality, this would come from your API
@@ -85,8 +113,8 @@ const ChallengePage = () => {
   const handleChallengeSubmit = async ({ selectedTime, selectedDate }) => {
     try {
       const challengeData = {
-        challengerId: "1",
-        challengerName: "Jai Pawar",
+        challengerId: currentUser.id,
+        challengerName: currentUser.name,
         challengedId: selectedUser.id,
         time: selectedTime,
         date: selectedDate,
