@@ -4,6 +4,10 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import PasswordRequirements from "./PasswordRequirements";
 import { validatePassword } from "../utils/passwordValidation";
+import {
+  startRegistration,
+  base64URLStringToBuffer,
+} from "@simplewebauthn/browser";
 
 export const RegisterForm = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -44,119 +48,146 @@ export const RegisterForm = () => {
 
   const handlePasskeyRegister = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
 
-    try {
-      const userId = `${name.toLowerCase().replace(/\s/g, "-")}-${Math.random()
-        .toString(36)
-        .slice(2)}`;
-
-      const publicKeyCredentialCreationOptions = {
-        challenge: new Uint8Array(32),
-        rp: {
-          name: "UIC REC RADAR",
-          id: window.location.hostname,
-        },
-        user: {
-          id: Uint8Array.from(userId, (c) => c.charCodeAt(0)),
-          name: email,
-          displayName: name,
-        },
-        pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-        authenticatorSelection: {
-          authenticatorAttachment: "platform",
-          requireResidentKey: true,
-          userVerification: "required",
-        },
-      };
-
-      const credential = await navigator.credentials.create({
-        publicKey: publicKeyCredentialCreationOptions,
-      });
-
-      console.log("Created credential:", credential);
-
-      // Extract credential details
-      const { id, rawId, response } = credential;
-      const { attestationObject } = response;
-
-      const passkeyData = {
-        credential_id: id, // Unique credential ID
-        public_key: btoa(
-          String.fromCharCode(...new Uint8Array(attestationObject))
-        ), // Base64 encode public key
-        authenticator_attachment: "platform",
-      };
-
-      // Send user details to the backend
-      const res = await fetch("https://uic-rec-radar.onrender.com/api/users", {
+    const optionsResponse = await fetch(
+      "https://uic-rec-radar.onrender.com/api/auth/options",
+      {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          passkey: passkeyData,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to create user");
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       }
+    );
+    const options = await optionsResponse.json();
+    const newOpts = {
+      optionsJSON: options,
+    };
+    console.log("Options from backend", options);
 
-      const data = await res.json();
-      console.log("User created:", data);
+    const credential = await startRegistration(newOpts);
+    console.log(
+      "Credential created from options using library on frontend",
+      credential
+    );
 
-      // // Immediately log in the user
-      // const assertion = await navigator.credentials.get({
-      //   publicKey: {
-      //     challenge: new Uint8Array(32), // Server-generated challenge
-      //     allowCredentials: [
-      //       {
-      //         id: Uint8Array.from(window.atob(passkeyData.credential_id), (c) =>
-      //           c.charCodeAt(0)
-      //         ),
-      //         type: "public-key",
-      //       },
-      //     ],
-      //     userVerification: "required",
-      //   },
-      // });
+    await fetch("https://uic-rec-radar.onrender.com/api/auth/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, credential }),
+    });
 
-      // console.log("Authenticated:", assertion);
+    // setIsLoading(true);
+    // setError("");
 
-      // // Send assertion to the backend for verification
-      // const loginRes = await fetch(
-      //   "https://uic-rec-radar.onrender.com/api/auth/login",
-      //   {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify({ assertion, email }),
-      //   }
-      // );
+    // try {
+    //   // Generate user ID
+    //   const userId = `${name.toLowerCase().replace(/\s/g, "-")}-${Math.random()
+    //     .toString(36)
+    //     .slice(2, 10)}`.slice(0, 64); // Ensure it is 64 bytes or fewer
 
-      // if (!loginRes.ok) {
-      //   throw new Error("Failed to log in");
-      // }
+    //   // // Fetch challenge from the server
+    //   // const challengeRes = await fetch(
+    //   //   "https://uic-rec-radar.onrender.com/api/auth/challenge"
+    //   // );
+    //   // if (!challengeRes.ok) {
+    //   //   throw new Error("Failed to fetch challenge");
+    //   // }
+    //   // const { challenge } = await challengeRes.json();
+    //   console.log("HHH", window.location.hostname);
+    //   // Create PublicKeyCredentialCreationOptions
+    //   const publicKeyCredentialCreationOptions = {
+    //     challenge: new Uint8Array(32),
+    //     rp: {
+    //       name: "UIC REC RADAR",
+    //       id: window.location.hostname,
+    //     },
+    //     user: {
+    //       id: Uint8Array.from(userId, (c) => c.charCodeAt(0)),
+    //       name: email,
+    //       displayName: name,
+    //     },
+    //     pubKeyCredParams: [{ alg: -7, type: "public-key" }], // ES256
+    //     authenticatorSelection: {
+    //       authenticatorAttachment: "platform",
+    //       requireResidentKey: true,
+    //       userVerification: "required",
+    //     },
+    //   };
 
-      // const loginData = await loginRes.json();
-      // console.log("Login successful:", loginData);
+    //   // Request credential creation
+    //   const credential = await navigator.credentials.create({
+    //     publicKey: publicKeyCredentialCreationOptions,
+    //   });
 
-      // localStorage.setItem("jwt", loginData.token);
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("tutorialCompleted", "false");
-      localStorage.setItem("justRegistered", "true");
-      toast.success("Account created successfully");
-      navigate("/app");
-    } catch (err) {
-      setError(err.message || "Failed to create passkey. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    //   console.log("Created credential:", credential);
+
+    //   // Extract credential details
+    //   const { id, rawId, response } = credential;
+    //   const { attestationObject } = response;
+
+    //   // Proper Base64 encoding
+    //   const encodeBase64 = (buffer) =>
+    //     btoa(String.fromCharCode(...new Uint8Array(buffer)));
+
+    //   const passkeyData = {
+    //     credential_id: id,
+    //     public_key: encodeBase64(attestationObject),
+    //     authenticator_attachment: "platform",
+    //   };
+
+    //   // Send user details to the backend
+    //   const res = await fetch("https://uic-rec-radar.onrender.com/api/users", {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({
+    //       name,
+    //       email,
+    //       passkey: passkeyData,
+    //     }),
+    //   });
+
+    //   if (!res.ok) {
+    //     throw new Error("Failed to create user");
+    //   }
+
+    //   const data = await res.json();
+    //   console.log("User created:", data);
+
+    //   // Immediately log in the user by sending the assertion
+    //   const loginRes = await fetch("https://uic-rec-radar.onrender.com/api/auth/login", {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({
+    //       assertion: credential,
+    //       email,
+    //     }),
+    //   });
+
+    //   if (!loginRes.ok) {
+    //     throw new Error("Failed to log in");
+    //   }
+
+    //   const loginData = await loginRes.json();
+    //   console.log("Login successful:", loginData);
+
+    //   // Store JWT in localStorage
+    //   localStorage.setItem("jwt", loginData.token);
+    //   localStorage.setItem("isAuthenticated", "true");
+    //   localStorage.setItem("tutorialCompleted", "false");
+    //   localStorage.setItem("justRegistered", "true");
+
+    //   // Notify and redirect
+    //   toast.success("Account created and logged in successfully");
+    //   navigate("/app");
+    // } catch (err) {
+    //   console.error("Error during registration:", err);
+    //   setError(err.message || "Failed to create passkey. Please try again.");
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
   const handleTraditionalRegister = async (e) => {

@@ -5,6 +5,7 @@ import { locationService } from "../services/locationService";
 
 const LocationCheckin = () => {
   const [isChecking, setIsChecking] = useState(false);
+  const token = localStorage.getItem("authToken");
 
   const handleCheckIn = async () => {
     try {
@@ -12,10 +13,11 @@ const LocationCheckin = () => {
       const loadingToast = toast.loading("Verifying your location...");
 
       const result = await locationService.verifyDailyCheckIn();
-      fetch(`https://uic-rec-radar.onrender.com/api/users/${1}/points`, {
+      fetch(`https://uic-rec-radar.onrender.com/api/users/points`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ points: 1 }),
       });

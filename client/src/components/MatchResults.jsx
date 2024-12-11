@@ -10,6 +10,7 @@ const MatchResults = ({ match, onMatchComplete }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [winner, setWinner] = useState(null);
   const { updatePoints } = usePoints();
+  const token = localStorage.getItem("authToken");
 
   const handleWinnerSelection = (selectedWinnerId) => {
     setWinner(selectedWinnerId);
@@ -59,7 +60,13 @@ const MatchResults = ({ match, onMatchComplete }) => {
 
       // Fetch updated points after the match result is submitted
       const response = await fetch(
-        `https://uic-rec-radar.onrender.com/api/users/1/points`
+        `https://uic-rec-radar.onrender.com/api/users/points`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       const data = await response.json();
       updatePoints(data.points);

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Loader, Key, Mail, EyeOff, Eye } from "lucide-react";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
+import { startAuthentication } from "@simplewebauthn/browser";
 
 export const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,28 +18,69 @@ export const LoginForm = () => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
     try {
-      const publicKeyCredentialRequestOptions = {
-        challenge: new Uint8Array(32),
-        rpId: window.location.hostname,
-        userVerification: "required",
-        timeout: 60000,
+      const optionsResponse = await fetch(
+        "https://uic-rec-radar.onrender.com/api/auth/passkey/options",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+      const options = await optionsResponse.json();
+      const newOpts = {
+        optionsJSON: options,
       };
+      console.log("Options", newOpts);
 
-      const credential = await navigator.credentials.get({
-        publicKey: publicKeyCredentialRequestOptions,
-      });
+      const credential = await startAuthentication(newOpts);
+      console.log("Credential", credential);
 
-      console.log("Retrieved credential:", credential);
-      localStorage.setItem("isAuthenticated", "true");
-      toast.success("Logged in successfully");
-      navigate("/app");
+      const response = await fetch(
+        "https://uic-rec-radar.onrender.com/api/auth/passkey/verify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, credential }),
+        }
+      );
+
+      const result = await response.json();
+      if (result.token) {
+        localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("authToken", result.token);
+        navigate("/app");
+      }
     } catch (err) {
       setError(err.message || "Failed to authenticate. Please try again.");
     } finally {
       setIsLoading(false);
     }
+
+    setIsLoading(true);
+    setError("");
+
+    // try {
+    //   const publicKeyCredentialRequestOptions = {
+    //     challenge: new Uint8Array(32),
+    //     rpId: window.location.hostname,
+    //     userVerification: "required",
+    //     timeout: 60000,
+    //   };
+
+    //   const credential = await navigator.credentials.get({
+    //     publicKey: publicKeyCredentialRequestOptions,
+    //   });
+
+    //   console.log("Retrieved credential:", credential);
+    //   localStorage.setItem("isAuthenticated", "true");
+    //   toast.success("Logged in successfully");
+    //   navigate("/app");
+    // } catch (err) {
+    //   setError(err.message || "Failed to authenticate. Please try again.");
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
   const handleTraditionalLogin = async (e) => {
@@ -113,27 +155,27 @@ export const LoginForm = () => {
         {error && (
           <div className="text-red-500 text-sm text-center">{error}</div>
         )}
-
+        <div className="space-y-4">
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Email address
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
         {authMethod === "traditional" && (
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
+          <>
             <div>
               <label
                 htmlFor="password"
@@ -165,7 +207,7 @@ export const LoginForm = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </>
         )}
 
         <div>

@@ -7,6 +7,8 @@ import {
   Trophy,
 } from "lucide-react";
 
+import { useState, useEffect } from "react";
+
 const ProfilePage = () => {
   // Mock user data
   const user = {
@@ -18,6 +20,35 @@ const ProfilePage = () => {
     streak: 5,
     joinDate: "2024-01-15",
   };
+
+  const token = localStorage.getItem("authToken");
+  const [currentUser, setCurrentUser] = useState();
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch(
+          "https://uic-rec-radar.onrender.com/api/users/user",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Error fetching users: ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log("DATAA", data);
+        setCurrentUser(data); // Set the fetched users
+      } catch (err) {
+        toast.error(err.message);
+      }
+    };
+    fetchCurrentUser();
+    console.log("Current user", currentUser);
+  }, []);
 
   const stats = [
     { label: "Matches", value: user.matches, icon: Calendar },
@@ -99,16 +130,18 @@ const ProfilePage = () => {
           </div>
 
           <div>
-            <h1 className="text-2xl font-bold dark:text-white">{user.name}</h1>
+            <h1 className="text-2xl font-bold dark:text-white">
+              {currentUser?.name}
+            </h1>
             <div className="flex items-center space-x-2">
               <span className="capitalize text-gray-600 dark:text-gray-300">
-                {user.tier} tier
+                {currentUser?.tier} tier
               </span>
               <span className="text-sm text-gray-400 dark:text-gray-500">
                 •
               </span>
               <span className="text-gray-600 dark:text-gray-300">
-                {user.points} points
+                {currentUser?.points} points
               </span>
             </div>
           </div>

@@ -19,14 +19,16 @@ const authenticateToken = (req, res, next) => {
     if (err) {
       return res.status(403).json({ error: "Invalid token" });
     }
+    console.log("TK", token, user);
 
-    req.user = user; // Attach the user data (from the token) to the request
+    req.email = user; // Attach the user data (from the token) to the request
     next();
   });
 };
 
 // Get all users including their points for leaderboard
 router.get("/", authenticateToken, async (req, res) => {
+  const { email } = req.email;
   try {
     console.log("Connecting to Supabase...");
     const { data, error } = await supabase
@@ -42,15 +44,14 @@ router.get("/", authenticateToken, async (req, res) => {
   }
 });
 
-// Get a specific user by ID, including points
-router.get("/:id", authenticateToken, async (req, res) => {
-  // const { id } = req.params;
-  const { id } = req.user.id;
+// Get a specific user using token, including points
+router.get("/user", authenticateToken, async (req, res) => {
+  const { email } = req.email;
   try {
     const { data, error } = await supabase
       .from("users")
-      .select("id, name, email, points, confidence_level") // Select relevant columns, including points
-      .eq("id", id)
+      .select("id, name, email, points, confidence_level, tier, checked_in") // Select relevant columns, including points
+      .eq("email", email)
       .single();
     if (error) throw error;
     res.json(data);
@@ -58,6 +59,23 @@ router.get("/:id", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Error fetching user" });
   }
 });
+
+// // Get a specific user by ID, including points
+// router.get("/:id", authenticateToken, async (req, res) => {
+//   console.log("REQQQQ", req);
+//   const { id } = req.user.id;
+//   try {
+//     const { data, error } = await supabase
+//       .from("users")
+//       .select("id, name, email, points, confidence_level") // Select relevant columns, including points
+//       .eq("id", id)
+//       .single();
+//     if (error) throw error;
+//     res.json(data);
+//   } catch (err) {
+//     res.status(500).json({ error: "Error fetching user" });
+//   }
+// });
 
 // // Create a new user with default points set to 0
 // router.post("/", async (req, res) => {
@@ -79,13 +97,6 @@ router.post("/", async (req, res) => {
   const { name, email, passkey } = req.body;
 
   try {
-    // Parse passkey details
-    const passkeyData = {
-      credential_id: passkey.credential_id,
-      public_key: passkey.public_key,
-      authenticator_attachment: passkey.authenticator_attachment,
-    };
-
     // Insert user into the database
     const { data, error } = await supabase
       .from("users")
@@ -95,7 +106,7 @@ router.post("/", async (req, res) => {
           email,
           points: 0, // Initialize default points
           confidence_level: 0,
-          passkey: passkeyData, // Store passkey details
+          passkey: passkey, // Store passkey details
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -112,18 +123,18 @@ router.post("/", async (req, res) => {
 });
 
 // Get user points
-router.get("/:id/points", async (req, res) => {
-  const { id } = req.params;
+router.get("/points", authenticateToken, async (req, res) => {
+  const { email } = req.email;
   try {
     // Fetch the points for the specific user
     const { data, error } = await supabase
       .from("users")
       .select("points")
-      .eq("id", id)
+      .eq("email", email)
       .single();
 
     if (error) throw error;
-
+    console.log("POINYS", data);
     res.json({ points: data.points });
   } catch (err) {
     console.error("Error fetching user points:", err);
@@ -156,6 +167,66 @@ router.put("/:id/points", async (req, res) => {
       .from("users")
       .update({ points: updatedPoints })
       .eq("id", id);
+
+    if (error) throw error;
+
+    console.log("POINT UPDATE RES", data);
+
+    if (data.data.points > 70) {
+      const { currentUser, error } = await supabase
+        .from("users")
+        .update({ tier: "gold" })
+        .eq("id", id);
+
+      if (error) throw error;
+    } else if (data.data.points > 50 && data.data.points <= 70) {
+      const { currentUser, error } = await supabase
+        .from("users")
+        .update({ tier: "silver" })
+        .eq("id", id);
+
+      if (error) throw error;
+    } else {
+      const { currentUser, error } = await supabase
+        .from("users")
+        .update({ tier: "bronze" })
+        .eq("id", id);
+
+      if (error) throw error;
+    }
+
+    res.json({ message: "Points updated successfully", data });
+  } catch (err) {
+    console.error("Error updating user points:", err);
+    res.status(500).json({ error: "Error updating user points" });
+  }
+});
+
+// Update user points with a fixed amount, of logged in user
+router.put("/points", authenticateToken, async (req, res) => {
+  const { email } = req.email;
+  const { points } = req.body; // Expect points to be added in request body
+
+  if (typeof points !== "number") {
+    return res.status(400).json({ error: "Points must be a number" });
+  }
+
+  try {
+    // Append the points to the current points for the specific user
+    const { data: user, error: fetchError } = await supabase
+      .from("users")
+      .select("points")
+      .eq("email", email)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const updatedPoints = user.points + points;
+
+    const { data, error } = await supabase
+      .from("users")
+      .update({ points: updatedPoints })
+      .eq("email", email);
 
     if (error) throw error;
 
@@ -275,6 +346,36 @@ router.put("/:id/confidence", async (req, res) => {
   } catch (err) {
     console.error("Error updating user points:", err);
     res.status(500).json({ error: "Error updating user points" });
+  }
+});
+
+router.put("/checkedin", authenticateToken, async (req, res) => {
+  const { email } = req.email;
+  const { checked_in_value } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .update({ checked_in: checked_in_value })
+      .eq("email", email);
+    if (error) throw error;
+  } catch (err) {
+    res.status(500).json({ error: err });
+  }
+});
+
+router.get("/checkedin", authenticateToken, async (req, res) => {
+  try {
+    const { data, error, count } = await supabase
+      .from("users")
+      .select("id", { count: "exact" })
+      .eq("checked_in", true);
+
+    if (error) throw error;
+
+    res.status(200).json({ checked_in_count: count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

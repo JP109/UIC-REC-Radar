@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^13.0.0-alpha1",
+    "@simplewebauthn/server": "^13.0.0-alpha1",
     "autoprefixer": "^10.4.20",
     "lucide-react": "^0.456.0",
     "postcss": "^8.4.49",

@@ -5,7 +5,6 @@ const TIER_THRESHOLDS = {
   BRONZE: 0,
   SILVER: 100,
   GOLD: 300,
-  PLATINUM: 1000,
 };
 
 // const MATCH_POINTS = 5;
@@ -31,9 +30,13 @@ export const pointsService = {
         body: JSON.stringify({ points }),
       });
 
+      // console.log("POINTS SERVICE RESPONSE", response);
+
       if (!response.ok) {
         throw new Error(`Failed to update points for user ${userId}`);
       }
+
+      // response.formData.points;
 
       // Show success toast with appropriate message and icon
       if (points > 0) {
@@ -64,7 +67,6 @@ export const pointsService = {
    */
   calculateTier: (points, previousPoints) => {
     const getTier = (p) => {
-      if (p >= TIER_THRESHOLDS.PLATINUM) return "platinum";
       if (p >= TIER_THRESHOLDS.GOLD) return "gold";
       if (p >= TIER_THRESHOLDS.SILVER) return "silver";
       return "bronze";
