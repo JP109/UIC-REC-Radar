@@ -55,6 +55,7 @@ router.post("/verify", async (req, res) => {
     expectedChallenge,
     expectedRPID: rpID,
     expectedOrigin: `https://${rpID}`,
+    // expectedOrigin: `http://${rpID}:5173`,
     expectedUserID: userID,
   });
 
@@ -165,7 +166,7 @@ router.post("/passkey/verify", async (req, res) => {
     expectedChallenge,
     expectedRPID: rpID,
     expectedOrigin: `https://${rpID}`,
-    expectedOrigin: `https://${rpID}`,
+    // expectedOrigin: `http://${rpID}:5173`,
     // credential: storedCredential.credential,
     credential: authenticator,
   });
@@ -208,7 +209,7 @@ router.post("/passkey/verify", async (req, res) => {
 //       credentialId,
 //       challenge: new Uint8Array(32), // Server-generated challenge
 //       expectedRPID: "localhost", // Replace with your RP ID
-//       expectedOrigin: "http://localhost:5000", // Replace with your origin
+//       expectedOrigin: "http://https://uic-rec-radar.onrender.com", // Replace with your origin
 //     });
 
 //     if (!verified) {

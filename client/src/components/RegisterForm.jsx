@@ -1,251 +1,88 @@
+import { startRegistration } from "@simplewebauthn/browser";
+import { Key, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Loader, Key, Mail, EyeOff, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
-import PasswordRequirements from "./PasswordRequirements";
 import { validatePassword } from "../utils/passwordValidation";
-import {
-  startRegistration,
-  base64URLStringToBuffer,
-} from "@simplewebauthn/browser";
 
 export const RegisterForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [authMethod, setAuthMethod] = useState(null); // 'passkey' or 'traditional'
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordRequirements, setPasswordRequirements] = useState([]);
-
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (password) {
-      setPasswordRequirements(validatePassword(password));
-    }
-  }, [password]);
-
-  const validateForm = () => {
-    // Check if all password requirements are met
-    const allRequirementsMet = passwordRequirements.every((req) => req.valid);
-
-    if (!allRequirementsMet) {
-      setError("Please meet all password requirements");
-      return false;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return false;
-    }
-
-    return true;
-  };
 
   const handlePasskeyRegister = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    try {
+      const optionsResponse = await fetch(
+        "https://uic-rec-radar.onrender.com/api/auth/options",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+      const options = await optionsResponse.json();
+      const newOpts = {
+        optionsJSON: options,
+      };
+      console.log("Options from backend", options);
 
-    const optionsResponse = await fetch(
-      "https://uic-rec-radar.onrender.com/api/auth/options",
-      {
+      const credential = await startRegistration(newOpts);
+      console.log(
+        "Credential created from options using library on frontend",
+        credential
+      );
+
+      await fetch("https://uic-rec-radar.onrender.com/api/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      }
-    );
-    const options = await optionsResponse.json();
-    const newOpts = {
-      optionsJSON: options,
-    };
-    console.log("Options from backend", options);
-
-    const credential = await startRegistration(newOpts);
-    console.log(
-      "Credential created from options using library on frontend",
-      credential
-    );
-
-    await fetch("https://uic-rec-radar.onrender.com/api/auth/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, credential }),
-    });
-
-    // setIsLoading(true);
-    // setError("");
-
-    // try {
-    //   // Generate user ID
-    //   const userId = `${name.toLowerCase().replace(/\s/g, "-")}-${Math.random()
-    //     .toString(36)
-    //     .slice(2, 10)}`.slice(0, 64); // Ensure it is 64 bytes or fewer
-
-    //   // // Fetch challenge from the server
-    //   // const challengeRes = await fetch(
-    //   //   "https://uic-rec-radar.onrender.com/api/auth/challenge"
-    //   // );
-    //   // if (!challengeRes.ok) {
-    //   //   throw new Error("Failed to fetch challenge");
-    //   // }
-    //   // const { challenge } = await challengeRes.json();
-    //   console.log("HHH", window.location.hostname);
-    //   // Create PublicKeyCredentialCreationOptions
-    //   const publicKeyCredentialCreationOptions = {
-    //     challenge: new Uint8Array(32),
-    //     rp: {
-    //       name: "UIC REC RADAR",
-    //       id: window.location.hostname,
-    //     },
-    //     user: {
-    //       id: Uint8Array.from(userId, (c) => c.charCodeAt(0)),
-    //       name: email,
-    //       displayName: name,
-    //     },
-    //     pubKeyCredParams: [{ alg: -7, type: "public-key" }], // ES256
-    //     authenticatorSelection: {
-    //       authenticatorAttachment: "platform",
-    //       requireResidentKey: true,
-    //       userVerification: "required",
-    //     },
-    //   };
-
-    //   // Request credential creation
-    //   const credential = await navigator.credentials.create({
-    //     publicKey: publicKeyCredentialCreationOptions,
-    //   });
-
-    //   console.log("Created credential:", credential);
-
-    //   // Extract credential details
-    //   const { id, rawId, response } = credential;
-    //   const { attestationObject } = response;
-
-    //   // Proper Base64 encoding
-    //   const encodeBase64 = (buffer) =>
-    //     btoa(String.fromCharCode(...new Uint8Array(buffer)));
-
-    //   const passkeyData = {
-    //     credential_id: id,
-    //     public_key: encodeBase64(attestationObject),
-    //     authenticator_attachment: "platform",
-    //   };
-
-    //   // Send user details to the backend
-    //   const res = await fetch("https://uic-rec-radar.onrender.com/api/users", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify({
-    //       name,
-    //       email,
-    //       passkey: passkeyData,
-    //     }),
-    //   });
-
-    //   if (!res.ok) {
-    //     throw new Error("Failed to create user");
-    //   }
-
-    //   const data = await res.json();
-    //   console.log("User created:", data);
-
-    //   // Immediately log in the user by sending the assertion
-    //   const loginRes = await fetch("https://uic-rec-radar.onrender.com/api/auth/login", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify({
-    //       assertion: credential,
-    //       email,
-    //     }),
-    //   });
-
-    //   if (!loginRes.ok) {
-    //     throw new Error("Failed to log in");
-    //   }
-
-    //   const loginData = await loginRes.json();
-    //   console.log("Login successful:", loginData);
-
-    //   // Store JWT in localStorage
-    //   localStorage.setItem("jwt", loginData.token);
-    //   localStorage.setItem("isAuthenticated", "true");
-    //   localStorage.setItem("tutorialCompleted", "false");
-    //   localStorage.setItem("justRegistered", "true");
-
-    //   // Notify and redirect
-    //   toast.success("Account created and logged in successfully");
-    //   navigate("/app");
-    // } catch (err) {
-    //   console.error("Error during registration:", err);
-    //   setError(err.message || "Failed to create passkey. Please try again.");
-    // } finally {
-    //   setIsLoading(false);
-    // }
-  };
-
-  const handleTraditionalRegister = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      console.log("Traditional registration:", { name, email, password });
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("tutorialCompleted", "false");
-      localStorage.setItem("justRegistered", "true");
-      toast.success("Account created successfully");
-      navigate("/app");
+        body: JSON.stringify({ name, email, credential }),
+      });
     } catch (err) {
-      setError(err.message || "Failed to register. Please try again.");
+      console.error("Error during registration:", err);
+      setError(err.message || "Failed to create passkey. Please try again.");
     } finally {
       setIsLoading(false);
+      toast.success("Account created successfully");
     }
   };
 
-  if (!authMethod) {
-    return (
-      <div className="max-w-md w-full space-y-8 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-        <div>
-          <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
-            Create Account
-          </h2>
-          <p className="mt-2 text-center text-gray-600 dark:text-gray-400">
-            Choose how you want to register
-          </p>
-        </div>
+  // if (!authMethod) {
+  //   return (
+  //     <div className="max-w-md w-full space-y-8 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+  //       <div>
+  //         <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
+  //           Create Account
+  //         </h2>
+  //         <p className="mt-2 text-center text-gray-600 dark:text-gray-400">
+  //           Choose how you want to register
+  //         </p>
+  //       </div>
 
-        <div className="space-y-4">
-          <button
-            onClick={() => setAuthMethod("passkey")}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Key className="h-5 w-5" />
-            Register with Passkey
-          </button>
+  //       <div className="space-y-4">
+  //         <button
+  //           onClick={() => setAuthMethod("passkey")}
+  //           className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+  //         >
+  //           <Key className="h-5 w-5" />
+  //           Register with Passkey
+  //         </button>
 
-          <button
-            onClick={() => setAuthMethod("traditional")}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Mail className="h-5 w-5" />
-            Register with Email
-          </button>
-        </div>
-      </div>
-    );
-  }
+  //         {/* <button
+  //           onClick={() => setAuthMethod("traditional")}
+  //           className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+  //         >
+  //           <Mail className="h-5 w-5" />
+  //           Register with Email
+  //         </button> */}
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="max-w-md w-full space-y-8 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
@@ -254,19 +91,21 @@ export const RegisterForm = () => {
           Create Account
         </h2>
         <p className="mt-2 text-center text-gray-600 dark:text-gray-400">
-          {authMethod === "passkey"
+          {/* {authMethod === "passkey"
             ? "Register with passkey"
-            : "Register with email"}
+            : "Register with email"} */}
+          {"Register with passkey"}
         </p>
       </div>
 
       <form
         className="mt-8 space-y-6"
-        onSubmit={
-          authMethod === "passkey"
-            ? handlePasskeyRegister
-            : handleTraditionalRegister
-        }
+        // onSubmit={
+        //   authMethod === "passkey"
+        //     ? handlePasskeyRegister
+        //     : handleTraditionalRegister
+        // }
+        onSubmit={handlePasskeyRegister}
       >
         {error && (
           <div className="text-red-500 text-sm text-center">{error}</div>
@@ -309,7 +148,7 @@ export const RegisterForm = () => {
             />
           </div>
 
-          {authMethod === "traditional" && (
+          {/* {authMethod === "traditional" && (
             <>
               <div>
                 <label
@@ -374,7 +213,7 @@ export const RegisterForm = () => {
                 </div>
               </div>
             </>
-          )}
+          )} */}
         </div>
 
         <div>
@@ -398,7 +237,7 @@ export const RegisterForm = () => {
           </button>
         </div>
 
-        <div className="text-center">
+        {/* <div className="text-center">
           <button
             type="button"
             onClick={() => setAuthMethod(null)}
@@ -406,7 +245,7 @@ export const RegisterForm = () => {
           >
             Use a different registration method
           </button>
-        </div>
+        </div> */}
       </form>
     </div>
   );
