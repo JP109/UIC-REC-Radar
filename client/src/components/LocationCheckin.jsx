@@ -24,6 +24,14 @@ const LocationCheckin = () => {
       toast.success(`Check-in successful! +${1} point`, {
         id: loadingToast,
       });
+      fetch(`https://uic-rec-radar.onrender.com/api/users/checkedin`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ checked_in_value: true }),
+      });
     } catch (error) {
       toast.error(error.message);
     } finally {
