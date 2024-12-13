@@ -50,8 +50,8 @@ router.post("/verify", async (req, res) => {
     response: credential,
     expectedChallenge,
     expectedRPID: rpID,
-    // expectedOrigin: `https://${rpID}`,
-    expectedOrigin: `http://${rpID}:5173`,
+    expectedOrigin: `https://${rpID}`,
+    // expectedOrigin: `http://${rpID}:5173`,
     expectedUserID: userID,
   });
 
