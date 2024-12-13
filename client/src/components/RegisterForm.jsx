@@ -53,7 +53,7 @@ export const RegisterForm = () => {
       // Registration successful
       toast.success("Account created successfully");
       localStorage.setItem("justRegistered", "true");
-      navigate("/auth"); // Redirect to login
+      // navigate("/auth"); // Redirect to login
     } catch (err) {
       console.error("Registration error:", err); // Keep for debugging
 
