@@ -42,6 +42,14 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.setItem("isAuthenticated", "false");
+    fetch(`https://uic-rec-radar.onrender.com/api/users/checkedin`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ checked_in_value: false }),
+    });
     toast.success("Logged out successfully");
     navigate("/");
   };
