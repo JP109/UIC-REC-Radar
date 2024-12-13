@@ -3,7 +3,7 @@ const REC_CENTER_LOCATION = {
   lng: -87.6473,
 };
 
-const PROXIMITY_THRESHOLD = 100; // meters
+const PROXIMITY_THRESHOLD = 500; // meters
 
 export const locationService = {
   // Get user's current location
