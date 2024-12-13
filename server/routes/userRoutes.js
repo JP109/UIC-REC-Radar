@@ -60,38 +60,6 @@ router.get("/user", authenticateToken, async (req, res) => {
   }
 });
 
-// // Get a specific user by ID, including points
-// router.get("/:id", authenticateToken, async (req, res) => {
-//   console.log("REQQQQ", req);
-//   const { id } = req.user.id;
-//   try {
-//     const { data, error } = await supabase
-//       .from("users")
-//       .select("id, name, email, points, confidence_level") // Select relevant columns, including points
-//       .eq("id", id)
-//       .single();
-//     if (error) throw error;
-//     res.json(data);
-//   } catch (err) {
-//     res.status(500).json({ error: "Error fetching user" });
-//   }
-// });
-
-// // Create a new user with default points set to 0
-// router.post("/", async (req, res) => {
-//   const { name, email } = req.body;
-//   try {
-//     const { data, error } = await supabase
-//       .from("users")
-//       .insert([{ name, email, points: 20 }]) // Initialize points to 0
-//       .single();
-//     if (error) throw error;
-//     res.status(201).json(data);
-//   } catch (err) {
-//     res.status(500).json({ error: "Error creating user" });
-//   }
-// });
-
 // Create a new user with default points set to 20 and passkey details
 router.post("/", async (req, res) => {
   const { name, email, passkey } = req.body;

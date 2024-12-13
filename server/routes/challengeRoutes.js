@@ -80,29 +80,7 @@ router.get("/", authenticateToken, async (req, res) => {
     console.error("Error fetching challenges:", err);
     res.status(500).json({ error: "Error fetching challenges" });
   }
-  // try {
-  //   const { data, error } = await supabase
-  //     .from("challenges")
-  //     .select("*")
-  //     .eq("challenged_id", Number(id));
-  //   if (error) throw error;
-  //   res.json(data);
-  // } catch (err) {
-  //   res.status(500).json({ error: "Error fetching challenge" });
-  // }
 });
-
-// // Get all challenges
-// router.get("/", async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     const { data, error } = await supabase.from("challenges").select("*");
-//     if (error) throw error;
-//     res.json(data);
-//   } catch (err) {
-//     res.status(500).json({ error: "Error fetching challenge" });
-//   }
-// });
 
 // Update challenge status to "completed" and update points (example of resolving a challenge)
 router.put("/complete/:id", async (req, res) => {

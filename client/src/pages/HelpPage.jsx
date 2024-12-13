@@ -44,7 +44,8 @@ const HelpPage = () => {
                 </ul>
               </li>
               <li>
-                After creating your passkey, you'll be automatically logged in
+                After creating your passkey, You will get a success message. Go
+                to the login page after that to log in.
               </li>
               <li>Complete any initial profile setup if prompted</li>
             </ol>
@@ -158,9 +159,9 @@ const HelpPage = () => {
                   <li>
                     Points affect tier status:
                     <ul className="list-disc ml-6 mt-1">
-                      <li>Bronze: 0-49 points</li>
-                      <li>Silver: 50-99 points</li>
-                      <li>Gold: 100+ points</li>
+                      <li>Bronze: 0-99 points</li>
+                      <li>Silver: 100-299 points</li>
+                      <li>Gold: 300+ points</li>
                     </ul>
                   </li>
                 </ul>
@@ -328,11 +329,9 @@ const HelpPage = () => {
                 <li>
                   If registration fails:
                   <ul className="list-disc ml-6 mt-1">
-                    <li>Try using Chrome's incognito mode</li>
-                    <li>
-                      Ensure you're using a supported browser (Chrome
-                      recommended)
-                    </li>
+                    <li>Try using browser's incognito mode</li>
+                    <li>Ensure you're using a supported browser</li>
+                    <li>Clear your local storage</li>
                     <li>Clear your browser cache and cookies</li>
                   </ul>
                 </li>

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { User, Sun, Moon, LogOut, HelpCircle } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
@@ -9,10 +9,8 @@ const Navbar = () => {
   const { darkMode, toggleTheme } = useTheme();
   const { points, updatePoints } = usePoints();
   const navigate = useNavigate();
-  const location = useLocation();
   const token = localStorage.getItem("authToken");
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-  const isPublicPage = ["/", "/auth", "/help"].includes(location.pathname);
 
   useEffect(() => {
     if (isAuthenticated) {
