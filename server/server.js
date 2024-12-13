@@ -7,8 +7,14 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const corsOptions = {
+  origin: "https://uic-rec-radar.vercel.app", // Allow only your Vercel app
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true, // If you're using cookies or credentials
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Import Routes
