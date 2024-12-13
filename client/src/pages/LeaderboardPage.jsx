@@ -1,5 +1,6 @@
 import { Trophy, Medal, Award } from "lucide-react";
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 const LeaderboardPage = () => {
   const token = localStorage.getItem("authToken");

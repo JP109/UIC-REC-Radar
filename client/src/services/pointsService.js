@@ -7,8 +7,6 @@ const TIER_THRESHOLDS = {
   GOLD: 300,
 };
 
-// const MATCH_POINTS = 5;
-
 export const pointsService = {
   /**
    * Update user points and show appropriate toast notification
@@ -30,13 +28,9 @@ export const pointsService = {
         body: JSON.stringify({ points }),
       });
 
-      // console.log("POINTS SERVICE RESPONSE", response);
-
       if (!response.ok) {
         throw new Error(`Failed to update points for user ${userId}`);
       }
-
-      // response.formData.points;
 
       // Show success toast with appropriate message and icon
       if (points > 0) {
