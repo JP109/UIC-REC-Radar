@@ -1,6 +1,6 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { User, Sun, Moon, LogOut } from "lucide-react";
+import { User, Sun, Moon, LogOut, HelpCircle } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { usePoints } from "../context/PointsContext";
 import toast from "react-hot-toast";
@@ -9,44 +9,40 @@ const Navbar = () => {
   const { darkMode, toggleTheme } = useTheme();
   const { points, updatePoints } = usePoints();
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem("authToken");
+  const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+  const isPublicPage = ["/", "/auth", "/help"].includes(location.pathname);
 
   useEffect(() => {
-    const fetchPoints = async () => {
-      try {
-        const response = await fetch(
-          `https://uic-rec-radar.onrender.com/api/users/points`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+    if (isAuthenticated) {
+      const fetchPoints = async () => {
+        try {
+          const response = await fetch(
+            `https://uic-rec-radar.onrender.com/api/users/points`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          if (!response.ok) {
+            throw new Error(`Error fetching points: ${response.statusText}`);
           }
-        );
-        if (!response.ok) {
-          throw new Error(`Error fetching points: ${response.statusText}`);
+          const data = await response.json();
+          updatePoints(data.points);
+        } catch (error) {
+          console.error("Error fetching points:", error);
         }
-        const data = await response.json();
-        updatePoints(data.points);
-      } catch (error) {
-        console.error("Error fetching points:", error);
-      }
-    };
-
-    fetchPoints();
-  }, [updatePoints]);
+      };
+      fetchPoints();
+    }
+  }, [updatePoints, isAuthenticated]);
 
   const handleLogout = () => {
-    // Clear authentication state
     localStorage.setItem("isAuthenticated", "false");
-
-    // Clear any other user data from localStorage if needed
-    // localStorage.removeItem('userData');
-
-    // Show success message
     toast.success("Logged out successfully");
-
-    // Redirect to landing page
     navigate("/");
   };
 
@@ -55,7 +51,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <Link
-            to="/app"
+            to={isAuthenticated ? "/app" : "/"}
             id="navbar-logo"
             className="text-xl font-bold text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200"
           >
@@ -63,9 +59,23 @@ const Navbar = () => {
           </Link>
 
           <div className="flex items-center space-x-4">
-            <div id="points-display" className="pr-2">
-              Points: {points}
-            </div>
+            {/* Help link - always visible */}
+            <Link
+              to="/help"
+              className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+            >
+              <span>How To Use</span>
+              <HelpCircle className="h-5 w-5 ml-1" />
+            </Link>
+
+            {/* Only show points for authenticated users */}
+            {isAuthenticated && (
+              <div id="points-display" className="pr-2">
+                Points: {points}
+              </div>
+            )}
+
+            {/* Theme toggle - always visible */}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -77,21 +87,27 @@ const Navbar = () => {
                 <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
               )}
             </button>
-            <Link
-              to="/profile"
-              id="profile-button"
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-              aria-label="Profile"
-            >
-              <User className="h-6 w-6 text-gray-600 dark:text-gray-300" />
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="flex items-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-gray-600 dark:text-gray-300"
-              aria-label="Logout"
-            >
-              <LogOut className="h-6 w-6" />
-            </button>
+
+            {/* Profile and Logout - only for authenticated users */}
+            {isAuthenticated && (
+              <>
+                <Link
+                  to="/profile"
+                  id="profile-button"
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                  aria-label="Profile"
+                >
+                  <User className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-gray-600 dark:text-gray-300"
+                  aria-label="Logout"
+                >
+                  <LogOut className="h-6 w-6" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -18,6 +18,7 @@ export const LoginForm = () => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+
     try {
       const optionsResponse = await fetch(
         "https://uic-rec-radar.onrender.com/api/auth/passkey/options",
@@ -27,14 +28,22 @@ export const LoginForm = () => {
           body: JSON.stringify({ email }),
         }
       );
+
+      // Check if user exists
+      if (optionsResponse.status === 404) {
+        setIsLoading(false);
+        toast.error("No account found with this email");
+        return;
+      }
+
+      if (!optionsResponse.ok) {
+        throw new Error();
+      }
+
       const options = await optionsResponse.json();
-      const newOpts = {
-        optionsJSON: options,
-      };
-      console.log("Options", newOpts);
+      const newOpts = { optionsJSON: options };
 
       const credential = await startAuthentication(newOpts);
-      console.log("Credential", credential);
 
       const response = await fetch(
         "https://uic-rec-radar.onrender.com/api/auth/passkey/verify",
@@ -51,11 +60,14 @@ export const LoginForm = () => {
         localStorage.setItem("authToken", result.token);
         toast.success("Logged in successfully");
         navigate("/app");
+      } else {
+        setIsLoading(false);
+        toast.error("Authentication failed");
       }
     } catch (err) {
-      setError(err.message || "Failed to authenticate. Please try again.");
-    } finally {
+      console.error(err); // for debugging
       setIsLoading(false);
+      toast.error("Unable to sign in. Please try again.");
     }
   };
 
@@ -147,16 +159,6 @@ export const LoginForm = () => {
             )}
           </button>
         </div>
-
-        {/* <div className="text-center">
-          <button
-            type="button"
-            onClick={() => setAuthMethod(null)}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Use a different sign-in method
-          </button>
-        </div> */}
       </form>
     </div>
   );

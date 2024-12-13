@@ -16,6 +16,7 @@ export const RegisterForm = () => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+
     try {
       const optionsResponse = await fetch(
         "https://uic-rec-radar.onrender.com/api/auth/options",
@@ -25,29 +26,56 @@ export const RegisterForm = () => {
           body: JSON.stringify({ email }),
         }
       );
+      if (!optionsResponse.ok) {
+        throw new Error("registration_failed");
+      }
+
       const options = await optionsResponse.json();
-      const newOpts = {
-        optionsJSON: options,
-      };
-      console.log("Options from backend", options);
+      const newOpts = { optionsJSON: options };
 
       const credential = await startRegistration(newOpts);
-      console.log(
-        "Credential created from options using library on frontend",
-        credential
+
+      const verifyResponse = await fetch(
+        "https://uic-rec-radar.onrender.com/api/auth/verify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, credential }),
+        }
       );
 
-      await fetch("https://uic-rec-radar.onrender.com/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, credential }),
-      });
+      if (!verifyResponse.ok) {
+        // Check specific error cases
+        if (verifyResponse.status === 409) {
+          toast.error("An account with this email already exists");
+          return;
+        }
+        throw new Error("verification_failed");
+      }
+
+      // Registration successful
+      toast.success("Account created successfully");
+      localStorage.setItem("justRegistered", "true");
+      navigate("/auth"); // Redirect to login
     } catch (err) {
-      console.error("Error during registration:", err);
-      setError(err.message || "Failed to create passkey. Please try again.");
+      console.error("Registration error:", err); // Keep for debugging
+
+      // User-friendly error messages
+      if (err.name === "NotAllowedError") {
+        toast.error("Registration was cancelled. Please try again.");
+      } else if (err.name === "NotSupportedError") {
+        toast.error(
+          "Your device doesn't support passkey registration. Please try a different device."
+        );
+      } else if (err.message === "registration_failed") {
+        toast.error("Unable to start registration. Please try again.");
+      } else if (err.message === "verification_failed") {
+        toast.error("Unable to complete registration. Please try again.");
+      } else {
+        toast.error("Registration failed. Please try again later.");
+      }
     } finally {
       setIsLoading(false);
-      toast.success("Account created successfully");
     }
   };
 
