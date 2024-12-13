@@ -13,7 +13,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5000/api/users",
+              "raw": "http://https://uic-rec-radar.onrender.com/api/users",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5000",
@@ -27,7 +27,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5000/api/users/:id",
+              "raw": "http://https://uic-rec-radar.onrender.com/api/users/:id",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5000",
@@ -56,7 +56,7 @@
               "raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"johndoe@example.com\"\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/users",
+              "raw": "http://https://uic-rec-radar.onrender.com/api/users",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5000",
@@ -131,7 +131,7 @@
               "raw": "{\n    \"challengerId\": \"1\",\n    \"challengedId\": \"2\",\n    \"date\": \"2024-12-01\",\n    \"time\": \"15:00\"\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/challenges",
+              "raw": "http://https://uic-rec-radar.onrender.com/api/challenges",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5000",
@@ -145,7 +145,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5000/api/challenges/:id",
+              "raw": "http://https://uic-rec-radar.onrender.com/api/challenges/:id",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5000",

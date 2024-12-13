@@ -49,6 +49,7 @@ export const LoginForm = () => {
       if (result.token) {
         localStorage.setItem("isAuthenticated", "true");
         localStorage.setItem("authToken", result.token);
+        toast.success("Logged in successfully");
         navigate("/app");
       }
     } catch (err) {
@@ -56,82 +57,7 @@ export const LoginForm = () => {
     } finally {
       setIsLoading(false);
     }
-
-    setIsLoading(true);
-    setError("");
-
-    // try {
-    //   const publicKeyCredentialRequestOptions = {
-    //     challenge: new Uint8Array(32),
-    //     rpId: window.location.hostname,
-    //     userVerification: "required",
-    //     timeout: 60000,
-    //   };
-
-    //   const credential = await navigator.credentials.get({
-    //     publicKey: publicKeyCredentialRequestOptions,
-    //   });
-
-    //   console.log("Retrieved credential:", credential);
-    //   localStorage.setItem("isAuthenticated", "true");
-    //   toast.success("Logged in successfully");
-    //   navigate("/app");
-    // } catch (err) {
-    //   setError(err.message || "Failed to authenticate. Please try again.");
-    // } finally {
-    //   setIsLoading(false);
-    // }
   };
-
-  const handleTraditionalLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    try {
-      console.log("Traditional login:", { email, password });
-      localStorage.setItem("isAuthenticated", "true");
-      toast.success("Logged in successfully");
-      navigate("/app");
-    } catch (err) {
-      setError(err.message || "Failed to login. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (!authMethod) {
-    return (
-      <div className="max-w-md w-full space-y-8 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-        <div>
-          <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
-            Welcome Back
-          </h2>
-          <p className="mt-2 text-center text-gray-600 dark:text-gray-400">
-            Choose how you want to sign in
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <button
-            onClick={() => setAuthMethod("passkey")}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Key className="h-5 w-5" />
-            Continue with Passkey
-          </button>
-
-          <button
-            onClick={() => setAuthMethod("traditional")}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Mail className="h-5 w-5" />
-            Continue with Email
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-md w-full space-y-8 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
@@ -140,18 +66,11 @@ export const LoginForm = () => {
           Welcome Back
         </h2>
         <p className="mt-2 text-center text-gray-600 dark:text-gray-400">
-          {authMethod === "passkey"
-            ? "Sign in with your passkey"
-            : "Sign in with your email"}
+          {"Sign in with your passkey"}
         </p>
       </div>
 
-      <form
-        className="mt-8 space-y-6"
-        onSubmit={
-          authMethod === "passkey" ? handlePasskeyLogin : handleTraditionalLogin
-        }
-      >
+      <form className="mt-8 space-y-6" onSubmit={handlePasskeyLogin}>
         {error && (
           <div className="text-red-500 text-sm text-center">{error}</div>
         )}
@@ -229,7 +148,7 @@ export const LoginForm = () => {
           </button>
         </div>
 
-        <div className="text-center">
+        {/* <div className="text-center">
           <button
             type="button"
             onClick={() => setAuthMethod(null)}
@@ -237,7 +156,7 @@ export const LoginForm = () => {
           >
             Use a different sign-in method
           </button>
-        </div>
+        </div> */}
       </form>
     </div>
   );
