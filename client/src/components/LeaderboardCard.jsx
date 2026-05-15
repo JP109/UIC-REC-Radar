@@ -9,8 +9,6 @@ const LeaderboardCard = () => {
         icon={Trophy}
         title="Leaderboard"
         description="View top players"
-        bgColor="bg-purple-500"
-        darkBgColor="dark:bg-purple-700"
       />
     </div>
   );

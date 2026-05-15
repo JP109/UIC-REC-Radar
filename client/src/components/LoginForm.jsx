@@ -3,6 +3,7 @@ import { Loader, Key, Mail, EyeOff, Eye } from "lucide-react";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import { startAuthentication } from "@simplewebauthn/browser";
+import { API_BASE_URL } from "../config";
 
 export const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +22,7 @@ export const LoginForm = () => {
 
     try {
       const optionsResponse = await fetch(
-        "https://uic-rec-radar.onrender.com/api/auth/passkey/options",
+        `${API_BASE_URL}/api/auth/passkey/options`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -46,7 +47,7 @@ export const LoginForm = () => {
       const credential = await startAuthentication(newOpts);
 
       const response = await fetch(
-        "https://uic-rec-radar.onrender.com/api/auth/passkey/verify",
+        `${API_BASE_URL}/api/auth/passkey/verify`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

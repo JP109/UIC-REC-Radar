@@ -15,6 +15,7 @@
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
 /* Add smooth transitions for all color changes */

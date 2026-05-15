@@ -1,9 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { User, Sun, Moon, LogOut, HelpCircle } from "lucide-react";
+import { User, Sun, Moon, LogOut } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { usePoints } from "../context/PointsContext";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../config";
 
 const Navbar = () => {
   const { darkMode, toggleTheme } = useTheme();
@@ -16,18 +17,11 @@ const Navbar = () => {
     if (isAuthenticated) {
       const fetchPoints = async () => {
         try {
-          const response = await fetch(
-            `https://uic-rec-radar.onrender.com/api/users/points`,
-            {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          if (!response.ok) {
-            throw new Error(`Error fetching points: ${response.statusText}`);
-          }
+          const response = await fetch(`${API_BASE_URL}/api/users/points`, {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!response.ok) return;
           const data = await response.json();
           updatePoints(data.points);
         } catch (error) {
@@ -40,7 +34,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.setItem("isAuthenticated", "false");
-    fetch(`https://uic-rec-radar.onrender.com/api/users/checkedin`, {
+    fetch(`${API_BASE_URL}/api/users/checkedin`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -53,64 +47,62 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-lg transition-colors duration-200">
+    <nav className="bg-uic-navy shadow-lg">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-14 sm:h-16">
+          {/* Logo */}
           <Link
             to={isAuthenticated ? "/app" : "/"}
             id="navbar-logo"
-            className="text-xl font-bold text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200"
+            className="text-base sm:text-xl font-bold tracking-wide flex-shrink-0"
           >
-            UIC REC RADAR
+            <span className="text-white">UIC REC </span>
+            <span className="text-uic-red">RADAR</span>
           </Link>
 
-          <div className="flex items-center space-x-4">
-            {/* Help link - always visible */}
-            <Link
-              to="/help"
-              className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-            >
-              <span>How To Use</span>
-              <HelpCircle className="h-5 w-5 ml-1" />
-            </Link>
-
-            {/* Only show points for authenticated users */}
+          {/* Right side */}
+          <div className="flex items-center space-x-1 sm:space-x-3">
+            {/* Points — hide label on mobile */}
             {isAuthenticated && (
-              <div id="points-display" className="pr-2">
-                Points: {points}
+              <div
+                id="points-display"
+                className="text-white/90 text-xs sm:text-sm font-medium bg-white/10 px-2 sm:px-3 py-1 rounded-full"
+              >
+                <span className="hidden sm:inline">{points} pts</span>
+                <span className="sm:hidden">{points}pt</span>
               </div>
             )}
 
-            {/* Theme toggle - always visible */}
+            {/* Theme toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+              className="p-2 rounded-full hover:bg-white/10 transition-colors duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
               aria-label="Toggle theme"
             >
               {darkMode ? (
-                <Sun className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                <Sun className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
               ) : (
-                <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
               )}
             </button>
 
-            {/* Profile and Logout - only for authenticated users */}
+            {/* Profile + Logout — authenticated only */}
             {isAuthenticated && (
               <>
                 <Link
                   to="/profile"
                   id="profile-button"
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors duration-200 min-w-[36px] min-h-[36px] flex items-center justify-center"
                   aria-label="Profile"
                 >
-                  <User className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-gray-600 dark:text-gray-300"
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors duration-200 text-white/80 min-w-[36px] min-h-[36px] flex items-center justify-center"
                   aria-label="Logout"
                 >
-                  <LogOut className="h-6 w-6" />
+                  <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
               </>
             )}

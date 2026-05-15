@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import MatchResults from "../components/MatchResults";
-import { Search, Info } from "lucide-react";
+import { Info } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 const MatchRequests = () => {
   const [challenges, setChallenges] = useState(null); // State to hold the challenge details
@@ -8,7 +9,7 @@ const MatchRequests = () => {
   const token = localStorage.getItem("authToken");
 
   useEffect(() => {
-    fetch(`https://uic-rec-radar.onrender.com/api/challenges`, {
+    fetch(`${API_BASE_URL}/api/challenges`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

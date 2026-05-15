@@ -9,8 +9,6 @@ const OccupancyCard = () => {
         icon={MapPin}
         title="Live Occupancy"
         description="Check court availability"
-        bgColor="bg-green-500"
-        darkBgColor="dark:bg-green-700"
       />
     </div>
   );

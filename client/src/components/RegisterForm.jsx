@@ -2,6 +2,7 @@ import { startRegistration } from "@simplewebauthn/browser";
 import { Loader } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../config";
 
 export const RegisterForm = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,7 +17,7 @@ export const RegisterForm = () => {
 
     try {
       const optionsResponse = await fetch(
-        "https://uic-rec-radar.onrender.com/api/auth/options",
+        `${API_BASE_URL}/api/auth/options`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -33,7 +34,7 @@ export const RegisterForm = () => {
       const credential = await startRegistration(newOpts);
 
       const verifyResponse = await fetch(
-        "https://uic-rec-radar.onrender.com/api/auth/verify",
+        `${API_BASE_URL}/api/auth/verify`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
