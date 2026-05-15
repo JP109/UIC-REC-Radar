@@ -10,6 +10,10 @@ const {
 const jwt = require("jsonwebtoken");
 const rpID = process.env.RP_ID;
 const rpName = process.env.RP_NAME;
+const expectedOrigin =
+  rpID === "localhost"
+    ? "http://localhost:5174"
+    : `https://${rpID}`;
 
 let challengeMap = new Map();
 
@@ -50,8 +54,7 @@ router.post("/verify", async (req, res) => {
     response: credential,
     expectedChallenge,
     expectedRPID: rpID,
-    expectedOrigin: `https://${rpID}`,
-    // expectedOrigin: `http://${rpID}:5173`,
+    expectedOrigin,
     expectedUserID: userID,
   });
 
@@ -137,8 +140,7 @@ router.post("/passkey/verify", async (req, res) => {
     response: credential,
     expectedChallenge,
     expectedRPID: rpID,
-    expectedOrigin: `https://${rpID}`,
-    // expectedOrigin: `http://${rpID}:5173`,
+    expectedOrigin,
     // credential: storedCredential.credential,
     credential: authenticator,
   });
@@ -149,6 +151,29 @@ router.post("/passkey/verify", async (req, res) => {
   } else {
     res.status(400).json({ error: "Authentication failed" });
   }
+});
+
+// Dev-only instant login — only works when RP_ID=localhost
+router.post("/dev-login", async (req, res) => {
+  if (rpID !== "localhost") {
+    return res.status(403).json({ error: "Dev login not available in production" });
+  }
+
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email required" });
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, email, name")
+    .eq("email", email)
+    .single();
+
+  if (error || !data) {
+    return res.status(404).json({ error: "No account found with this email" });
+  }
+
+  const token = generateToken(email);
+  res.json({ success: true, token });
 });
 
 module.exports = router;

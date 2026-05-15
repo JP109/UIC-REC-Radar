@@ -1,5 +1,6 @@
-const API_BASE_URL = "https://uic-rec-radar.onrender.com/api/users";
 import toast from "react-hot-toast";
+import { API_BASE_URL as BASE_URL } from "../config";
+const API_BASE_URL = `${BASE_URL}/api/users`;
 
 const TIER_THRESHOLDS = {
   BRONZE: 0,

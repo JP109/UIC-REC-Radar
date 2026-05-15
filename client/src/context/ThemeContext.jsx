@@ -7,11 +7,12 @@ export const ThemeProvider = ({ children }) => {
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("theme");
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-
-      return savedTheme === "dark" || (!savedTheme && prefersDark);
+      // Only honour an explicit dark preference; default to light
+      if (savedTheme !== "dark") {
+        localStorage.setItem("theme", "light");
+        return false;
+      }
+      return true;
     }
     return false;
   });

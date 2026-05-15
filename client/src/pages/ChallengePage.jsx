@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, ArrowLeft } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import ChallengeModal from "../components/ChallengeModal";
 import { challengeService } from "../services";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../config";
 
 const ChallengePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -15,25 +17,34 @@ const ChallengePage = () => {
   const [users, setUsers] = useState([]);
   const token = localStorage.getItem("authToken");
   const [currentUser, setCurrentUser] = useState();
+  const navigate = useNavigate();
+
+  const handleAuthError = (status) => {
+    if (status === 401 || status === 403) {
+      localStorage.setItem("isAuthenticated", "false");
+      localStorage.removeItem("authToken");
+      toast.error("Session expired — please log in again");
+      navigate("/auth");
+    }
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
       setUSerDataLoading(true);
       try {
-        const response = await fetch(
-          "https://uic-rec-radar.onrender.com/api/users",
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch(`${API_BASE_URL}/api/users`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.status === 401 || response.status === 403) {
+          handleAuthError(response.status);
+          return;
+        }
         if (!response.ok) {
           throw new Error(`Error fetching users: ${response.statusText}`);
         }
         const data = await response.json();
-        setUsers(data); // Set the fetched users
+        setUsers(data);
       } catch (err) {
         toast.error(err.message);
       } finally {
@@ -43,7 +54,7 @@ const ChallengePage = () => {
     const fetchCurrentUser = async () => {
       try {
         const response = await fetch(
-          "https://uic-rec-radar.onrender.com/api/users/user",
+          `${API_BASE_URL}/api/users/user`,
           {
             method: "GET",
             headers: {
@@ -171,9 +182,17 @@ const ChallengePage = () => {
 
       {/* Challenge Players Section */}
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Challenge Players
-        </h2>
+        <div>
+          <Link
+            to="/app"
+            className="inline-flex items-center text-xs text-gray-500 hover:text-uic-navy dark:hover:text-white transition-colors mb-2"
+          >
+            <ArrowLeft className="h-3 w-3 mr-1" /> Home
+          </Link>
+          <h2 className="text-xl sm:text-2xl font-bold text-uic-navy dark:text-white pb-2 border-b-2 border-uic-red">
+            Challenge Players
+          </h2>
+        </div>
 
         {/* Search and Filter */}
         <div className="flex flex-col md:flex-row gap-4">
@@ -214,27 +233,25 @@ const ChallengePage = () => {
             filteredUsers.map((user) => (
               <div
                 key={user.id}
-                className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md flex justify-between items-center"
+                className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center hover:border-uic-red transition-colors duration-200"
               >
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                  <h3 className="font-semibold text-uic-navy dark:text-white">
                     {user.name}
                   </h3>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                      {user.tier} tier
+                      {user.tier} Tier
                     </span>
+                    <span className="text-sm text-gray-400">•</span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
-                      •
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {user.points} points
+                      {user.points} pts
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={() => openChallengeModal(user)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
+                  className="px-4 py-2 bg-uic-red text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-sm font-medium"
                 >
                   Challenge
                 </button>

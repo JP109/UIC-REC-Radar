@@ -1,6 +1,8 @@
+import { API_BASE_URL } from "../config";
+
 export const challengeService = {
   sendChallenge: async (challengeData) => {
-    fetch("https://uic-rec-radar.onrender.com/api/challenges", {
+    fetch(`${API_BASE_URL}/api/challenges`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

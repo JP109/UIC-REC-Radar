@@ -9,8 +9,6 @@ const ChallengeCard = () => {
         icon={Users}
         title="Challenge"
         description="Challenge other players to matches"
-        bgColor="bg-blue-500"
-        darkBgColor="dark:bg-blue-700"
       />
     </div>
   );

@@ -116,7 +116,7 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
                   max={maxDate}
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-uic-red focus:border-uic-red"
                 />
               </div>
             </div>
@@ -131,7 +131,7 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
                   value={selectedTime}
                   onChange={(e) => setSelectedTime(e.target.value)}
                   disabled={!selectedDate || isLoading}
-                  className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50 focus:ring-uic-red focus:border-uic-red"
                 >
                   <option value="">Select time</option>
                   {availableTimes.map((time) => (
@@ -166,14 +166,14 @@ const ChallengeModal = ({ isOpen, onClose, selectedUser, onSubmit }) => {
             <button
               onClick={handleClose}
               disabled={isSubmitting}
-              className="px-4 py-2 border dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+              className="px-4 py-2 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 text-sm font-medium transition-colors duration-200"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={!selectedDate || !selectedTime || isSubmitting}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="px-4 py-2 bg-uic-red text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-sm font-medium transition-colors duration-200"
             >
               {isSubmitting ? (
                 <>
